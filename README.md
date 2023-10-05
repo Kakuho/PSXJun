@@ -1,6 +1,6 @@
 ﻿## PSXJun
 
-PSXJun is an amateur experimental low level emulator to learn more about computer architecture, using the PlayStation 1 as a case study. For an actual playable emulator, please check out the emulators listed below. PSXJun
+PSXJun is an amateur experimental low level emulator to learn more about computer architecture, using the PlayStation 1 as a case study. For an actual playable emulator, please check out the emulators listed below.
 
 ## Motivation
 
