@@ -6,8 +6,7 @@ rom/*
 
 *.scrap
 
-# ignore every binary executables in src/test
+# ignore every file in src/test but the .cpp files
 
-src/test/*.o
-src/test/*.so
-src/test/*.a
+src/test/*
+!src/test/*.cpp
