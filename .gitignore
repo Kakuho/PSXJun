@@ -1,3 +1,13 @@
 # ignore every files in ./rom
 
 rom/*
+
+# ignore every file which ends in .scrap - used for my own scrap note purposes
+
+*.scrap
+
+# ignore every binary executables in src/test
+
+src/test/*.o
+src/test/*.so
+src/test/*.a
