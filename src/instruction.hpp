@@ -3,42 +3,53 @@
 
 
 namespace Instruction{
-    // R instructions
-    
-  constexpr std::uint8_t R_HEADER = 0b0000'0000;
-  constexpr std::uint8_t FUNCT    = 0b0011'1111;
 
     // Operands
     
-  constexpr std::uint8_t RS     = 0b0001'1111;
-  constexpr std::uint8_t RT     = 0b0001'1111;
-  constexpr std::uint8_t SHAMT  = 0b0001'1111;
+  constexpr std::uint32_t OPCODE  = 0xFC'00'00'00;
+  constexpr std::uint32_t RS      = 0x03'E0'00'00;
+  constexpr std::uint32_t RT      = 0x00'1F'00'00;
+  constexpr std::uint32_t RD      = 0x00'00'F8'00;
+  constexpr std::uint32_t SHAMT   = 0x00'00'07'C0;
+  constexpr std::uint32_t FUNCT   = 0x00'00'00'3F;
+  constexpr std::uint32_t IMM     = 0x00'00'FF'FF;
+  constexpr std::uint32_t ADDR     = 0x03'FF'FF'FF;
     
     // helpful functions for operands
+    // The shifts are to rid the unncessary digits
 
-  std::uint8_t Getrs(std::uint32_t instruction){
-
-  }
-
-  std::uint8_t Getrt(std::uint32_t instruction){
+  std::uint8_t GetOpcode(std::uint32_t instruction){
+    return (instruction & OPCODE) >> 26;
 
   }
 
-  std::uint8_t Getrd(std::uint32_t instruction){
+  std::uint8_t GetRs(std::uint32_t instruction){
+    return (instruction & RS) >> 21;
+  }
 
+  std::uint8_t GetRt(std::uint32_t instruction){
+    return (instruction & RT) >> 16;
+  }
+
+  std::uint8_t GetRd(std::uint32_t instruction){
+    return (instruction & RD) >> 11;
   }
 
 
   std::uint8_t GetShamt(std::uint32_t instruction){
-
+    return (instruction & SHAMT) >> 6;
   }
 
-  std::uint16_t GetImmediateI(std::uint32_t instruction){
-
+  std::uint8_t GetFunction(std::uint32_t instruction){
+    return instruction & FUNCT;
   }
 
-  std::uint32_t GetImmediateJ(std::uint32_t instruction){
+  std::uint16_t GetImm(std::uint32_t instruction){
+    return instruction & IMM;
+  }
 
+  std::uint32_t GetAddr(std::uint32_t instruction){
+    return instruction & ADDR;
   }
 
     // MIPS-1 Functions - https://en.wikibooks.org/wiki/MIPS_Assembly/Instruction_Formats
