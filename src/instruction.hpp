@@ -40,7 +40,7 @@ namespace Instruction{
     return (instruction & SHAMT) >> 6;
   }
 
-  std::uint8_t GetFunction(std::uint32_t instruction){
+  std::uint8_t GetFunct(std::uint32_t instruction){
     return instruction & FUNCT;
   }
 
@@ -86,6 +86,8 @@ namespace Instruction{
   constexpr std::uint8_t OP_SLL   = 0x00;
   constexpr std::uint8_t OP_SRL   = 0x02;
   constexpr std::uint8_t OP_SRA   = 0x03;
+
+  constexpr std::uint8_t OP_MFC0  = 0x10;
 
     // J - type instructions (Jump) are encoded as such:
     //
