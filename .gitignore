@@ -2,9 +2,11 @@
 
 rom/*
 
-# ignore every file which ends in .scrap - used for my own scrap note purposes
+# ignore every file contained in notes.
+# notes contains information I researched in order to build
+# the emulator
 
-*.scrap
+notes/*
 
 # ignore every file in src/test but the .cpp files
 
