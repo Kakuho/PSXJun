@@ -1,3 +1,6 @@
+#ifndef CPU_HPP
+#define CPU_HPP
+
 // Definition of the r3000a processor.
 #include <array>
 #include <iostream>
@@ -63,3 +66,5 @@ class CPU{
   void InvalidOp() const{ std::cout << "INSTRUCTION IS INVALID" << '\n'; }
 
 }
+
+#endif

@@ -1,4 +1,3 @@
-
 // Registers
 
 std::uint32_t CPU::GetRegisterValue(std::uint8_t index) const{
