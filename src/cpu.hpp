@@ -4,7 +4,7 @@
 // Definition of the r3000a processor.
 #include <array>
 #include <iostream>
-
+#include <cstdint>
 #include "instruction.hpp"
 
 static const long CLOCKSPEED = -1;
@@ -13,14 +13,14 @@ static const long CLOCKSPEED = -1;
 class CPU{
   std::array<std::uint8_t, 4000> m_instrucion_cache;
   std::array<std::uint8_t, 1000> m_data_cache;
-  std::array<std::uint32_t 32>   m_registers;
+  std::array<std::uint32_t, 32>   m_registers;
   /* TODO: memory should be moved into its own class */
-  std::array<std::uint8_t 100000> m_ram;  
+  std::array<std::uint8_t, 100000> m_ram;  
   std::uint32_t m_hi = 0;     // upper half of 64 bit multiplication
   std::uint32_t m_low = 0;    // lower half of 64 bit multiplication
   std::uint32_t m_pc;
   std::size_t   m_ticks;
-  std::uint32_t m_ibuffer     // buffer for the current instruction
+  std::uint32_t m_ibuffer;     // buffer for the current instruction
 
   public:
   /* TODO: create initialisation functions */
@@ -35,7 +35,7 @@ class CPU{
   void SetPC(std::uint32_t addr){ m_pc = addr;}
 
   std::uint32_t GetHi() const { return m_hi;}
-  std::uint32_t GetLo() const { return m_lo;}
+  std::uint32_t GetLow() const { return m_low;}
 
     // instruction buffer functions
 
@@ -48,9 +48,8 @@ class CPU{
     
   std::uint8_t ReadByte(std::size_t index) const;
   std::uint16_t GetHalfWord(std::size_t index1, std::size_t index2, 
-                            std::size_t index3, std::size_t index3) const;
-  std::uint32_t GetWord(std::size_t index) const;
-  std::uint32_t GetInstruction() const;
+                            std::size_t index3, std::size_t index4) const;
+  std::uint32_t ReadWord(std::size_t index) const;
 
     // CPU operational functions
 
@@ -65,6 +64,6 @@ class CPU{
   void UnimplementedOp() const{ std::cout << "OPERATION NOT IMPLEMENTED!" << '\n';} // helper
   void InvalidOp() const{ std::cout << "INSTRUCTION IS INVALID" << '\n'; }
 
-}
+};
 
 #endif
