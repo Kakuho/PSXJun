@@ -1,0 +1,3 @@
+/home/ka/C++/projects/PSXJun/build/CMakeFiles/PSXJun.dir
+/home/ka/C++/projects/PSXJun/build/CMakeFiles/edit_cache.dir
+/home/ka/C++/projects/PSXJun/build/CMakeFiles/rebuild_cache.dir
