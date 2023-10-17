@@ -8,6 +8,10 @@ rom/*
 
 notes/*
 
+# ignores every file in the build directory
+
+build/*
+
 # ignore every file in src/test but the .cpp files
 
 src/test/*
