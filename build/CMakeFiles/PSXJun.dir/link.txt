@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/PSXJun.dir/src/main.cpp.o CMakeFiles/PSXJun.dir/src/cpu.cpp.o CMakeFiles/PSXJun.dir/src/memory.cpp.o -o PSXJun 
