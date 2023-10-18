@@ -28,9 +28,11 @@ class Bios{
 
 
 class Memory{
+  // overreaching memory class for the psx system
   public:
 
   private:
+    Bios& bios;
 };
 
 #endif

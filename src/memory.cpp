@@ -19,13 +19,16 @@ Bios::Bios(std::string file):
 }
 
 void Bios::Dump() const{
-  std::size_t i = 0;
+  /* performs a hex dump of the bios file stored in the class Bios */
+  std::size_t i = 0;  
+  std::cout << "0x" << std::setw(8) << std::setfill('0') << std::hex << i << std::setw(3) << std::setfill(' ') << "|" << std::setw(2) << ' ';
   for(std::uint8_t byte: m_data){
     std::bitset<8> bits{ byte };
     std::cout << std::setw(2) << std::setfill('0') << std::hex << bits.to_ulong(); // very slow
     i++;
     if(i % 16 == 0){
-      std::cout << '\n';
+      std::cout << '\n' << "0x" << std::setw(8) << std::setfill('0') << std::hex << i << std::setw(3) << std::setfill(' ') << "|" << std::setw(2) << ' ';
+
     }
     else if(i % 8 == 0){
       std::cout << "\t\t";
@@ -35,5 +38,3 @@ void Bios::Dump() const{
     }
   }
 }
-
-
