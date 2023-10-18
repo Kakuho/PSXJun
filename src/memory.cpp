@@ -38,3 +38,12 @@ void Bios::Dump() const{
     }
   }
 }
+
+// PSX RAM
+
+// PSX ScratchPad - also ram
+
+//---------------------------------------------------------------//
+
+std::uint8_t Memory::GetByte(std::size_t index){
+}
