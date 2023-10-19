@@ -1,4 +1,5 @@
 #include "cpu.hpp"
+#include "instruction.hpp"
 
 // Registers
 
@@ -25,7 +26,7 @@ std::uint8_t CPU::ReadByte(std::size_t index) const{
 
 std::uint16_t CPU::GetHalfWord(std::size_t index1, std::size_t index2, 
                                std::size_t index3, std::size_t index4) const{
-  /* TODO : wrapping around the address space */
+  /* TODO   : wrapping around the address space */
   // Assumes: fetching bytes in the order M[index1], M[index2], M[index3], M[index4]
   std::uint8_t byte1 = ReadByte(index1);
   // R3000A is little endian, so the half word would be M[index4], M[index3], M[index2], M[index1].
@@ -74,12 +75,13 @@ void CPU::Tick(){
   else{
     Fetch();
     std::uint8_t opcode = Instruction::GetOpcode(GetInstruction());  // decode step
+    Decode();
+    // execute step
     switch(opcode){
       case 0:{ // R-type instruction
-        std::uint8_t funct = Instruction::GetFunct(GetInstruction());
-        switch(funct){
-          case Instruction::OP_ADD:    UnimplementedOp(); break;
-          case Instruction::OP_ADDU:   UnimplementedOp(); break;
+        switch(m_args.funct){
+          case Instruction::OP_ADD:    ADD(m_args.rd, m_args.rs, m_args.rt); break;
+          case Instruction::OP_ADDU:   ADDU(m_args.rd, m_args.rs, m_args.rt); break;
           case Instruction::OP_SUB:    UnimplementedOp(); break;
           case Instruction::OP_SUBU:   UnimplementedOp(); break;
           case Instruction::OP_MULT:   UnimplementedOp(); break;
@@ -104,27 +106,27 @@ void CPU::Tick(){
         }
       }
     // all other functions
-    case Instruction::OP_JP   :     UnimplementedOp(); break;
-    case Instruction::OP_JAL  :     UnimplementedOp(); break;
-    case Instruction::SP_SLTI :     UnimplementedOp(); break;
+    case Instruction::OP_JP:        UnimplementedOp(); break;
+    case Instruction::OP_JAL:       UnimplementedOp(); break;
+    case Instruction::SP_SLTI:      UnimplementedOp(); break;
     case Instruction::SP_SLTIU:     UnimplementedOp(); break;
-    case Instruction::SP_ANDI :     UnimplementedOp(); break;
-    case Instruction::SP_ORI  :     UnimplementedOp(); break;
-    case Instruction::SP_BEQ  :     UnimplementedOp(); break;
-    case Instruction::SP_BNE  :    UnimplementedOp(); break;
-    case Instruction::SP_BLEZ :     UnimplementedOp(); break;
-    case Instruction::SP_BGTZ:   UnimplementedOp(); break;
-    case Instruction::SP_ADDI :   UnimplementedOp(); break;
-    case Instruction::SP_ADDIU:  UnimplementedOp(); break;
-    case Instruction::SP_LUI  :    UnimplementedOp(); break;
-    case Instruction::SP_SW   :     UnimplementedOp(); break;
-    case Instruction::SP_LB   :     UnimplementedOp(); break;
-    case Instruction::SP_LW   :     UnimplementedOp(); break;
-    case Instruction::SP_LBU  :    UnimplementedOp(); break;
-    case Instruction::SP_LHU  :    UnimplementedOp(); break;
-    case Instruction::SP_SB   :     UnimplementedOp(); break;
-    case Instruction::SP_SH   :     UnimplementedOp(); break;
-    case Instruction::OP_MFC0:   UnimplementedOp(); break;
+    case Instruction::SP_ANDI:      UnimplementedOp(); break;
+    case Instruction::SP_ORI:       UnimplementedOp(); break;
+    case Instruction::SP_BEQ:       UnimplementedOp(); break;
+    case Instruction::SP_BNE:       UnimplementedOp(); break;
+    case Instruction::SP_BLEZ:      UnimplementedOp(); break;
+    case Instruction::SP_BGTZ:      UnimplementedOp(); break;
+    case Instruction::SP_ADDI:      UnimplementedOp(); break;
+    case Instruction::SP_ADDIU:     UnimplementedOp(); break;
+    case Instruction::SP_LUI:       UnimplementedOp(); break;
+    case Instruction::SP_SW:        UnimplementedOp(); break;
+    case Instruction::SP_LB:        UnimplementedOp(); break;
+    case Instruction::SP_LW:        UnimplementedOp(); break;
+    case Instruction::SP_LBU:       UnimplementedOp(); break;
+    case Instruction::SP_LHU:       UnimplementedOp(); break;
+    case Instruction::SP_SB:        UnimplementedOp(); break;
+    case Instruction::SP_SH:        UnimplementedOp(); break;
+    case Instruction::OP_MFC0:      UnimplementedOp(); break;
     }
   }
 }
@@ -133,4 +135,33 @@ void CPU::Fetch(){
   SetInstruction( ReadWord( GetPC() ) );
 }
 
+void CPU::Decode(){
+  // decodes the arguments 
+  m_args.rs = Instruction::GetRs(GetInstruction());
+  m_args.rt = Instruction::GetRt(GetInstruction());
+  m_args.rd = Instruction::GetRd(GetInstruction());
+  m_args.shamt = Instruction::GetShamt(GetInstruction());
+  m_args.imm = Instruction::GetImm(GetInstruction());
+}
+
 // CPU opcodes functions
+
+// ADDS - Must test the signedness of the operands
+
+void CPU::ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt){
+  // rs, rt are treated as signed integers
+  Register(rd) = Register(rs) + Register(rt);
+}
+
+void CPU::ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm){
+  // rs, imm are treated as signed integers
+  Register(rt) = Register(rs) + imm;
+}
+
+void CPU::ADDIU(std::uint8_t rt, std::uint8_t rs, std::uint16_t imm){
+  Register(rt) = Register(rs) + imm;
+}
+
+void CPU::ADDU(std::uint8_t rd, std::uint8_t rs, std::uint8_t rt){
+  Register(rd) = Register(rs) + Register(rt);
+}
