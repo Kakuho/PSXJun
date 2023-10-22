@@ -10,12 +10,18 @@ project(PSXJun  VERSION 1.0
 
 # ThirdParty
 add_executable(PSXJun
-                src/main.cpp
-                src/psx.cpp
-                src/psx.hpp
-                src/cpu.cpp 
-                src/cpu.hpp
+                src/main/main.cpp
+
+                src/system/psx.cpp
+                src/system/psx.hpp
+                src/system/bus.cpp
+                src/system/bus.hpp
+
                 src/memory.cpp 
                 src/memory.hpp
-                src/instruction.hpp
+                src/memory_mapping.hpp
+
+                src/processor/cpu.cpp 
+                src/processor/cpu.hpp
+                src/processor/instruction.hpp
                 )
