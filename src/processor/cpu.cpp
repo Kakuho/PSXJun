@@ -1,23 +1,28 @@
 #include "cpu.hpp"
 #include "instruction.hpp"
+#include <stdexcept>
+
+#define LOG
 
 namespace psxjun{
 
 namespace processor{
 
+// bare bones initialiser - to be improved later
+CPU::CPU(){
+  m_registers[0] = 0;
+}
+
 // Registers
 
 std::uint32_t CPU::GetRegisterValue(std::uint8_t index) const{
-  if(index == 0){
-    // zeroth register is hardwired to 0
-    return 0;
-  }
-  else if (index <= 32){
+  if (index <= 32){
     return m_registers[index];
   }
   else{
-    /* TODO: should throw an out of bounds exception */
-    std::cerr << "ERROR :: INDEX IS OUT OF BOUNDS" << '\n';
+    throw std::runtime_error{
+      "ERROR: GetRegisterValue(uint8_t index): " + std::to_string(index) + " is out of bounds"
+    };
   }
 }
 
@@ -151,37 +156,54 @@ void CPU::Decode(){
   m_args.imm    = GetImm(GetInstruction());
 }
 
+
+// Exception testers
+
+bool CPU::arithmeticOverflow(std::uint32_t val1, std::uint32_t val2) const{
+  std::uint32_t result = val1 + val2;
+  bool overflowLow = (std::int32_t)val1 > 0 && (std::int32_t)val2 > 0 
+    && result < 0;
+  bool overflowHigh = (std::int32_t)val1 < 0 && (std::int32_t)val2 < 0 
+    && result > 0;
+  std::bitset<32> bitpattern = result;
+  std::cout << result << '|' << bitpattern << '\n';
+  return (overflowLow || overflowHigh)? true: false;
+}
+
+// Exception triggers
+
+void CPU::triggerOVF(){
+  // TODO: Research to implement OVF
+  std::cout << "AN OVERFLOW HAS OCCURED" << '\n';
+  throw std::runtime_error{"ERROR :: OVF Exception not implemented"};
+}
+
 // CPU opcodes functions
 
 // ADDS - Must test the signedness of the operands
-
 void CPU::ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt){
-  // rs, rt are treated as signed integers
-  // rd ← rs + rt
-  std::int32_t val = Register(rs) + Register(rt);
-  bool overflowLow = (std::int32_t)Register(rs) > 0 && (std::int32_t)Register(rt) > 0 && val < 0;
-  bool overflowHigh = (std::int32_t)Register(rs) < 0 && (std::int32_t)Register(rt) < 0 && val > 0;
-  //---------------------------------------------------------------//
-  std::bitset<32> bitpattern = val;
-  std::cout << val << '|' << bitpattern << '\n';
-  //---------------------------------------------------------------//
-  if(overflowLow || overflowHigh){
-    // TODO: perform an integer overflow exception
-    std::cout << "AN OVERFLOW HAS OCCURED" << '\n';
+  // Mnemonic: ADD rd, rs, rt
+  // rs, rt are treated as signed integers, integer overflow may occur
+  if(arithmeticOverflow(Register(rs), Register(rt))){
+    triggerOVF();
   }
   else{
-    Register(rd) = val;
+    Register(rd) = Register(rs) + Register(rt);
   }
 }
 
 void CPU::ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm){
-  // rs, imm are treated as signed integers
-  // signedness doesn't matter in arithmetric
-  Register(rt) = Register(rs) + imm;
+  // mnemonic: ADDI rt, rs, imm
+  // rs is a 32 bit register, imm is a 16 bit, so need sign extension
+  if(arithmeticOverflow(Register(rs), imm)){
+    triggerOVF();
+  }
+  else{
+    Register(rt) = Register(rs) + imm;
+  }
 }
 
 void CPU::ADDIU(std::uint8_t rt, std::uint8_t rs, std::uint16_t imm){
-  // signedness doesn't matter in arithmetric
   Register(rt) = Register(rs) + imm;
 }
 
@@ -190,6 +212,40 @@ void CPU::ADDU(std::uint8_t rd, std::uint8_t rs, std::uint8_t rt){
   Register(rd) = Register(rs) + Register(rt);
 }
 
-}
+// Mulitplication Division
+
+void CPU::DIV(std::uint8_t rs, std::uint8_t rt){
+  // An attempt to read LO or HI before the results are written will wait 
+  // (interlock) until the results are ready.
+  // Asynchronous execution does not affect the program result, but offers an 
+  // opportunity for performance improvement by scheduling the divide so that 
+  // other instructions canexecute in parallel.
+  // (LO, HI) = rs/rt
+  Lo() = rs / rt;
+  Hi() = rs % rt;
 
 }
+
+void CPU::DIVU(std::uint8_t rs, std::uint8_t rt){
+  // BE WARY OF SIGN ISSUES!!!!
+  Lo() = rs / rt;
+  Hi() = rs % rt;
+}
+
+
+// Logical 
+
+void CPU::AND(std::uint8_t rs, std::uint8_t rt, std::uint8_t rd){
+  Register(rs) = Register(rt) & Register(rd);
+}
+
+void CPU::ANDI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
+  // the docs says it's zero extension so I assume immediate is a 16-bit unsigned
+  Register(rs) = Register(rt) & imm;
+}
+
+
+
+} // namespace processor
+
+} // namespace psxjun

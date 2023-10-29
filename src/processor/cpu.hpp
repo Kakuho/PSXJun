@@ -10,6 +10,8 @@
 #include <iostream>
 #include <cstdint>
 #include <bitset>
+#include <stdexcept>
+#include <string>
 
 namespace psxjun{
 
@@ -24,6 +26,23 @@ struct arguments{
   std::uint8_t rd;  
   std::uint8_t shamt;
   std::uint16_t imm;  
+};
+
+// ugly class to hold exceptions for now
+struct Exceptions{
+  bool ext  = 0;  // external interrupt
+  bool mod  = 0;  // tlb modification exception
+  bool tlbl = 0;  // tlb miss exception load / instruction fetch
+  bool tlbs = 0;  // tlb miss exception store
+  bool adel = 0;  // address error exception load / instruction fetch 
+  bool ades = 0;  // address error exception store
+  bool ibe  = 0;  // bus error exception fetch
+  bool dbe  = 0;  // bus error exception load/store
+  bool sys  = 0;  // system call exception
+  bool bp   = 0;  // breakpoint exception
+  bool ri   = 0;  // reserved instruction exception
+  bool cpu  = 0;  // coprecessor unusable exception
+  bool ovf  = 0;  // arithmetric overflow exception
 };
 
 // The PSX CPU is a MIPS R3000A cpu.
@@ -46,11 +65,17 @@ class CPU{
   arguments m_args;
   std::uint32_t m_ibuffer;    // buffer for the current instruction
 
+  /* TODO: exceptions should be moved into the COP0 class to model psx more 
+   * accurately 
+   */
+
+  Exceptions m_exceptions;
+
 public:
 
   /* TODO: create initialisation functions */
 
-  CPU() = default;
+  CPU();
 
   // register related
   
@@ -62,7 +87,9 @@ public:
   void SetPC(std::uint32_t addr){ m_pc = addr;}
 
   std::uint32_t GetHi() const { return m_hi;}
+  std::uint32_t& Hi() {return m_hi;}
   std::uint32_t GetLow() const { return m_low;}
+  std::uint32_t& Lo() {return m_low;}
 
   // instruction buffer functions
 
@@ -71,7 +98,8 @@ public:
 
   // N.B  : memory input / output instructions are written to the Data Cache
   //      : r3000a is a little endian processor 
-  //      : r3000a defines a byte as 8 bit, halfword as 16 bits and a word as 32 bits
+  //      : r3000a defines a byte as 8 bit, halfword as 16 bits and a word as 
+  //        32 bits
     
   std::uint8_t ReadByte(std::size_t index) const;
   std::uint16_t GetHalfWord(std::size_t index1, std::size_t index2, 
@@ -88,22 +116,61 @@ public:
 
   // CPU opcodes
 
-  void UnimplementedOp() const{ std::cout << "OPERATION NOT IMPLEMENTED!" << '\n';} // helper
+  void UnimplementedOp() const{ 
+    std::cout << "OPERATION NOT IMPLEMENTED!" << '\n';
+  } 
+
+  // overflow detection
+
+  bool arithmeticOverflow(std::uint32_t val1, std::uint32_t val2) const;
+
+  // Exception Triggers
+
+  void triggerOVF();  // OVF is the name for arithmetic overflow excpetion
+
+  // helper
+  
   void InvalidOp() const{ std::cout << "INSTRUCTION IS INVALID" << '\n'; }
 
-  // Adds
-
+  // ALU
+  
   void ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt);
   void ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm);
   void ADDIU(std::uint8_t rt, std::uint8_t rs, std::uint16_t imm);
   void ADDU(std::uint8_t rd, std::uint8_t rs, std::uint8_t rt);
 
-  // Subtraction
-
   void SUB(std::int8_t rd, std::uint8_t rs, std::uint8_t rt);
   void SUBU(std::int8_t rd, std::int8_t rs, std::int8_t rt);
 
-  // Logical And
+  // Multiplication Division
+
+  void DIV(std::uint8_t rs, std::uint8_t rt);
+  void DIVU(std::uint8_t rs, std::uint8_t rt);
+
+  // Logical
+
+  void AND(std::uint8_t rs, std::uint8_t rt, std::uint8_t rd);
+  void ANDI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm);
+
+  // These instructions requires understanding of the branch delay slot
+  //
+  // Jumps
+  // TODO: J INSTRUCTIONS!!!!
+  //
+  // Branches
+  // TODO: ALL THE B INSTRUCTIONS!!!!
+  //---------------------------------------------------------------//
+  //
+  // These instructions requires implementation of the coprocessor class
+  //
+  // Coprocessors
+  // TODO: ALL THE C INSTRUCTIONS!!!!
+  //---------------------------------------------------------------//
+  
+  // MISC
+  void CACHE(std::uint8_t base, std::uint8_t op, std::int16_t imm){
+    throw std::runtime_error{"Instruction CACHE is not implemented"};
+  }
 
 };
 
