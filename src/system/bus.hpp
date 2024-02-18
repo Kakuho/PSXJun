@@ -3,6 +3,7 @@
 
 #include "./../processor/cpu.hpp"
 #include "./../memory/memory.hpp"
+#include "./../memory/memory_mapping.hpp"
 
 #include <memory>
 
@@ -20,25 +21,27 @@ namespace memory{
 
 namespace system{
 
-class Bus{
+// this is the system bus - it operates with respect to cpu address semantics.
+class SystemBus{
 
   // TODO: add handles to GPU, SPU, CD-ROM, MDEC when implementing these subsystems
   
-  processor::CPU* m_cpu = nullptr;
-  memory::Bios* m_bios = nullptr;
-  memory::Ram* m_ram = nullptr;
-  memory::ScratchPad* m_scratchpad = nullptr;
+  processor::CPU& m_cpu;
+  memory::Bios& m_bios;
+  memory::Ram& m_ram;
+  memory::ScratchPad& m_scratchpad;
 
   public:
-  Bus(
-      processor::CPU* cpu, 
-      memory::Bios*bios, 
-      memory::Ram* ram, 
-      memory::ScratchPad* scratchpad
+  SystemBus(
+      processor::CPU& cpu, 
+      memory::Bios& bios, 
+      memory::Ram& ram, 
+      memory::ScratchPad& scratchpad
       );
-  Bus();
+  SystemBus() = delete;
 
-
+  std::uint8_t GetByte(std::size_t index) const;
+  std::uint32_t GetWord(std::size_t index) const;
 };
 
 } // namespace system

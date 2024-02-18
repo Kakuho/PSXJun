@@ -2,15 +2,20 @@
 #include "instruction.hpp"
 #include <stdexcept>
 
-#define LOG
-
 namespace psxjun{
 
 namespace processor{
 
-// bare bones initialiser - to be improved later
 CPU::CPU(){
   m_registers[0] = 0;
+  m_pc = reset_vector;
+}
+
+CPU::CPU(system::SystemBus* sysbus):
+  m_sysbus{sysbus}
+{
+  m_registers[0] = 0;
+  m_pc = reset_vector;
 }
 
 // Registers
@@ -30,7 +35,7 @@ std::uint32_t CPU::GetRegisterValue(std::uint8_t index) const{
 
 std::uint8_t CPU::ReadByte(std::size_t index) const{
   /* TODO: wrapping around the address space*/
-  return m_ram[index];
+  return m_sysbus->GetByte(index);
 }
 
 std::uint16_t CPU::GetHalfWord(std::size_t index1, std::size_t index2, 
@@ -42,7 +47,7 @@ std::uint16_t CPU::GetHalfWord(std::size_t index1, std::size_t index2,
 }
 
 std::uint32_t CPU::ReadWord(std::size_t index) const{
-  return 0;
+  return m_sysbus->GetWord(index);
 }
 
 
@@ -84,7 +89,7 @@ void CPU::Tick(){
   }
   else{
     Fetch();
-
+    std::cout << "pc = " << (unsigned)GetPC() << '\n';
     std::uint8_t opcode = instruction::GetOpcode(GetInstruction());  // decode step
     Decode();
     // execute step
@@ -93,51 +98,51 @@ void CPU::Tick(){
         switch(m_args.funct){
           case OP_ADD:    ADD(m_args.rd, m_args.rs, m_args.rt); break;
           case OP_ADDU:   ADDU(m_args.rd, m_args.rs, m_args.rt); break;
-          case OP_SUB:    UnimplementedOp(); break;
-          case OP_SUBU:   UnimplementedOp(); break;
-          case OP_MULT:   UnimplementedOp(); break;
-          case OP_MULTU:  UnimplementedOp(); break;
-          case OP_DIV:    UnimplementedOp(); break;
-          case OP_DIVU:   UnimplementedOp(); break;
-          case OP_MFHI:   UnimplementedOp(); break;
-          case OP_MTHI:   UnimplementedOp(); break;
-          case OP_MFLO:   UnimplementedOp(); break;
-          case OP_MTLO:   UnimplementedOp(); break;
-          case OP_AND:    UnimplementedOp(); break;
-          case OP_NOR:    UnimplementedOp(); break;
-          case OP_XOR:    UnimplementedOp(); break;
-          case OP_OR:     UnimplementedOp(); break;
-          case OP_JALR:   UnimplementedOp(); break;
-          case OP_JR:     UnimplementedOp(); break;
-          case OP_SLT:    UnimplementedOp(); break;
-          case OP_SLTU:   UnimplementedOp(); break;
-          case OP_SLL:    UnimplementedOp(); break;
-          case OP_SRL:    UnimplementedOp(); break;
-          case OP_SRA:    UnimplementedOp(); break;
+          case OP_SUB:    UnimplementedOp("SUB"); break;
+          case OP_SUBU:   UnimplementedOp("SUBU"); break;
+          case OP_MULT:   UnimplementedOp("MULT"); break;
+          case OP_MULTU:  UnimplementedOp("MULTU"); break;
+          case OP_DIV:    UnimplementedOp("DIV"); break;
+          case OP_DIVU:   UnimplementedOp("DIVU"); break;
+          case OP_MFHI:   UnimplementedOp("MFHI"); break;
+          case OP_MTHI:   UnimplementedOp("MTHI"); break;
+          case OP_MFLO:   UnimplementedOp("MFLO"); break;
+          case OP_MTLO:   UnimplementedOp("MTLO"); break;
+          case OP_AND:    UnimplementedOp("AND"); break;
+          case OP_NOR:    UnimplementedOp("NOR"); break;
+          case OP_XOR:    UnimplementedOp("XOR"); break;
+          case OP_OR:     UnimplementedOp("OR"); break;
+          case OP_JALR:   UnimplementedOp("JALR"); break;
+          case OP_JR:     UnimplementedOp("JR"); break;
+          case OP_SLT:    UnimplementedOp("SLT"); break;
+          case OP_SLTU:   UnimplementedOp("SLTU"); break;
+          case OP_SLL:    UnimplementedOp("SLL"); break;
+          case OP_SRL:    UnimplementedOp("SRL"); break;
+          case OP_SRA:    UnimplementedOp("SRA"); break;
         }
       }
     // all other functions
-    case OP_JP:        UnimplementedOp(); break;
-    case OP_JAL:       UnimplementedOp(); break;
-    case SP_SLTI:      UnimplementedOp(); break;
-    case SP_SLTIU:     UnimplementedOp(); break;
-    case SP_ANDI:      UnimplementedOp(); break;
-    case SP_ORI:       UnimplementedOp(); break;
-    case SP_BEQ:       UnimplementedOp(); break;
-    case SP_BNE:       UnimplementedOp(); break;
-    case SP_BLEZ:      UnimplementedOp(); break;
-    case SP_BGTZ:      UnimplementedOp(); break;
-    case SP_ADDI:      UnimplementedOp(); break;
-    case SP_ADDIU:     UnimplementedOp(); break;
-    case SP_LUI:       UnimplementedOp(); break;
-    case SP_SW:        UnimplementedOp(); break;
-    case SP_LB:        UnimplementedOp(); break;
-    case SP_LW:        UnimplementedOp(); break;
-    case SP_LBU:       UnimplementedOp(); break;
-    case SP_LHU:       UnimplementedOp(); break;
-    case SP_SB:        UnimplementedOp(); break;
-    case SP_SH:        UnimplementedOp(); break;
-    case OP_MFC0:      UnimplementedOp(); break;
+    case OP_JP:        UnimplementedOp("JP"); break;
+    case OP_JAL:       UnimplementedOp("JAL"); break;
+    case SP_SLTI:      UnimplementedOp("SLTI"); break;
+    case SP_SLTIU:     UnimplementedOp("SLTIU"); break;
+    case SP_ANDI:      UnimplementedOp("ANDI"); break;
+    case SP_ORI:       UnimplementedOp("ORI"); break;
+    case SP_BEQ:       UnimplementedOp("BEQ"); break;
+    case SP_BNE:       UnimplementedOp("BNE"); break;
+    case SP_BLEZ:      UnimplementedOp("BLEZ"); break;
+    case SP_BGTZ:      UnimplementedOp("BGTZ"); break;
+    case SP_ADDI:      UnimplementedOp("ADDI"); break;
+    case SP_ADDIU:     UnimplementedOp("ADDIU"); break;
+    case SP_LUI:       UnimplementedOp("LUI"); break;
+    case SP_SW:        UnimplementedOp("SW"); break;
+    case SP_LB:        UnimplementedOp("LB"); break;
+    case SP_LW:        UnimplementedOp("LW"); break;
+    case SP_LBU:       UnimplementedOp("LBU"); break;
+    case SP_LHU:       UnimplementedOp("LHU"); break;
+    case SP_SB:        UnimplementedOp("SB"); break;
+    case SP_SH:        UnimplementedOp("SH"); break;
+    case OP_MFC0:      UnimplementedOp("MFC0"); break;
     }
   }
 }
@@ -155,7 +160,6 @@ void CPU::Decode(){
   m_args.shamt  = GetShamt(GetInstruction());
   m_args.imm    = GetImm(GetInstruction());
 }
-
 
 // Exception testers
 
@@ -223,7 +227,6 @@ void CPU::DIV(std::uint8_t rs, std::uint8_t rt){
   // (LO, HI) = rs/rt
   Lo() = rs / rt;
   Hi() = rs % rt;
-
 }
 
 void CPU::DIVU(std::uint8_t rs, std::uint8_t rt){
@@ -243,8 +246,6 @@ void CPU::ANDI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
   // the docs says it's zero extension so I assume immediate is a 16-bit unsigned
   Register(rs) = Register(rt) & imm;
 }
-
-
 
 } // namespace processor
 

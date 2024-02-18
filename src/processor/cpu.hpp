@@ -5,6 +5,7 @@
 
 #include "./../system/bus.hpp"
 #include "instruction.hpp"
+#include "exceptionVectors.hpp"
 
 #include <array>
 #include <iostream>
@@ -14,6 +15,10 @@
 #include <string>
 
 namespace psxjun{
+
+namespace system{
+  class SystemBus;
+}
 
 namespace processor{
 
@@ -28,54 +33,33 @@ struct arguments{
   std::uint16_t imm;  
 };
 
-// ugly class to hold exceptions for now
-struct Exceptions{
-  bool ext  = 0;  // external interrupt
-  bool mod  = 0;  // tlb modification exception
-  bool tlbl = 0;  // tlb miss exception load / instruction fetch
-  bool tlbs = 0;  // tlb miss exception store
-  bool adel = 0;  // address error exception load / instruction fetch 
-  bool ades = 0;  // address error exception store
-  bool ibe  = 0;  // bus error exception fetch
-  bool dbe  = 0;  // bus error exception load/store
-  bool sys  = 0;  // system call exception
-  bool bp   = 0;  // breakpoint exception
-  bool ri   = 0;  // reserved instruction exception
-  bool cpu  = 0;  // coprecessor unusable exception
-  bool ovf  = 0;  // arithmetric overflow exception
-};
-
 // The PSX CPU is a MIPS R3000A cpu.
+
 class CPU{
   std::array<std::uint32_t, 32>   m_registers;
-
-  /* TODO: memory should be moved into its own class */
-
-  std::array<std::uint8_t, 4000> m_instrucion_cache;
-  std::array<std::uint8_t, 1000> m_data_cache;
-  std::array<std::uint8_t, 100000> m_ram;  
-
   std::uint32_t m_hi = 0;     // upper half of 64 bit multiplication
   std::uint32_t m_low = 0;    // lower half of 64 bit multiplication
-  std::uint32_t m_pc;         // program counter
-  std::size_t   m_ticks;      // stores the number of ticks
-  
+  std::uint32_t m_pc = 0;         // program counter
+  std::size_t   m_ticks;
+
+  // connections to the rest of the system
+
+  system::SystemBus* m_sysbus;
+
   // helpers for instructions, opcode decoding
 
   arguments m_args;
   std::uint32_t m_ibuffer;    // buffer for the current instruction
-
-  /* TODO: exceptions should be moved into the COP0 class to model psx more 
-   * accurately 
-   */
-
-  Exceptions m_exceptions;
 
 public:
 
   /* TODO: create initialisation functions */
 
   CPU();
+  CPU(system::SystemBus* sysbus);
+  void HookSystemBus(system::SystemBus& sysbus){
+    m_sysbus = &sysbus;
+  }
 
   // register related
   
@@ -116,8 +100,10 @@ public:
 
   // CPU opcodes
 
-  void UnimplementedOp() const{ 
-    std::cout << "OPERATION NOT IMPLEMENTED!" << '\n';
+  void UnimplementedOp(std::string&& op) const{ 
+    throw std::runtime_error{
+      "Opcode " + op + " is not implemented"
+    };
   } 
 
   // overflow detection
@@ -160,14 +146,20 @@ public:
   // Branches
   // TODO: ALL THE B INSTRUCTIONS!!!!
   //---------------------------------------------------------------//
-  //
-  // These instructions requires implementation of the coprocessor class
-  //
-  // Coprocessors
-  // TODO: ALL THE C INSTRUCTIONS!!!!
-  //---------------------------------------------------------------//
-  
+
+  // coprocessor
+
+  void LWC0(std::uint8_t rt, std::uint16_t offset);
+  void SWC0(std::uint8_t rt, std::uint16_t offset);
+  void MTC0(std::uint8_t rt, std::uint8_t rd);
+  void MFC0(std::uint8_t rt, std::uint8_t rd);
+  void CTC0(std::uint8_t rt, std::uint8_t rd);
+  void CFC0(std::uint8_t rt, std::uint8_t rd);
+  void COP0(std::uint8_t rt, std::uint8_t rd);
+  void RFE();
+
   // MISC
+  
   void CACHE(std::uint8_t base, std::uint8_t op, std::int16_t imm){
     throw std::runtime_error{"Instruction CACHE is not implemented"};
   }

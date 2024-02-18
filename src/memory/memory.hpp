@@ -11,18 +11,32 @@
 #include <iostream>
 #include <iomanip>
 #include <bitset>
+#include <stdexcept>
+
+#include "memory_mapping.hpp"
 
 namespace psxjun{
 
 namespace memory{
 
-// Memory subsystems
-// Design: each memory system should share a common interface
+static inline constexpr unsigned BIOS_SIZE = 512*1024; // Bios is 512KB 
+static inline constexpr unsigned RAM_SIZE = 1.9 * 1048576;
+const static unsigned ScratchPad_SIZE = 1024; // Scratchpad is 1024 bytes
 
-class Bios{
-  static inline constexpr unsigned BIOS_SIZE = 512*1024; // Bios is 512KB 
-                                                          // https://problemkaputt.de/psx-spx.htm#memorymap
-  std::array<std::uint8_t, BIOS_SIZE> m_data;
+// Memory subsystems
+
+// each memory system should share a common interface
+template<std::size_t capacity>
+class ContiguousMemory{
+  public:
+    std::uint8_t& operator[](std::size_t index){ return m_data[index]; }
+    const std::uint8_t& operator[](std::size_t index) const{ return m_data[index]; }
+  protected:
+    std::array<std::uint8_t, capacity> m_data{};
+};
+
+// https://problemkaputt.de/psx-spx.htm#memorymap
+class Bios: public ContiguousMemory<BIOS_SIZE>{
   std::string m_biosPath;
   std::ifstream m_ifst;
   
@@ -30,21 +44,18 @@ class Bios{
     Bios() = default;
     Bios(std::string file);
     void Dump() const; 
+    std::uint8_t Get(std::size_t index){return m_data[index];}
 };
 
-class Ram{
-  static inline constexpr unsigned RAM_SIZE = 1.9 * 1048576;
-  std::array<std::uint8_t, RAM_SIZE> m_data;
-
+// Physical RAM
+class Ram: public ContiguousMemory<RAM_SIZE>{
   public:
     Ram() = default;
-    void Dump();
+    void Dump() const;
 };
 
-class ScratchPad{
-  const static unsigned ScratchPad_SIZE = 1024; // Scratchpad is 1024 bytes
-  std::array<std::uint8_t, ScratchPad_SIZE> m_data;
-
+// Cache
+class ScratchPad: public ContiguousMemory<ScratchPad_SIZE>{
   public:
     ScratchPad() = default;
     void Dump() const; 
@@ -55,6 +66,7 @@ class ScratchPad{
 // overreaching memory class for the psx system
 
 class Memory{
+    Ram& m_ram;
     Bios& bios;
     ScratchPad& spad;
 

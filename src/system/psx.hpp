@@ -1,27 +1,39 @@
 #ifndef PSX_HPP
 #define PSX_HPP
 
-#include "cpu.hpp"
-#include "memory.hpp"
+#include "./../processor/cpu.hpp"
+#include "./../memory/memory.hpp"
 #include "bus.hpp"
 
 #include <memory>
+
+
+namespace psxjun{
+
+using processor::CPU;
+
+using memory::Ram;
+using memory::Bios;
+using memory::ScratchPad;
+
+namespace system{
 
 class Psx{
   std::unique_ptr<CPU>  m_cpu;
   std::unique_ptr<Bios> m_bios;
   std::unique_ptr<Ram>  m_ram;
   std::unique_ptr<ScratchPad> m_scratchpad;
-  std::unique_ptr<Bus> m_bus;
+  std::unique_ptr<SystemBus> m_bus;
   // TODO: add handles to GPU, SPU, CD-ROM, MDEC when implementing these subsystems
 
   public:
     Psx();
-    void ConfigureBus();
-
+    Psx(std::string&& biosFilePath);
     void run();
-
-  private:
+    void run(std::size_t ticks);
 };
 
+}
+
+}
 #endif
