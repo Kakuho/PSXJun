@@ -42,8 +42,7 @@ std::uint8_t SystemBus::GetByte(std::size_t index) const{
     // get memory from the bios
     std::uint32_t bios_mask = ~(0xfff << 20);
     //std::cout << "bios map: " << (unsigned)(index & bios_mask) << '\n';
-    return m_bios[0];
-    //return m_bios[index & bios_mask];
+    return m_bios[index & bios_mask];
   }
   else{
     // I'm not sure what's supposed to happen here, is cop0 supposed to issue an 
@@ -54,6 +53,7 @@ std::uint8_t SystemBus::GetByte(std::size_t index) const{
 
 std::uint32_t SystemBus::GetWord(std::size_t index) const{
   //std::cout << std::hex << index << '\n';
+  // the system is configured for little endian
   std::uint8_t first = GetByte(index);
   std::uint8_t second = GetByte(index + 1); 
   std::uint8_t third = GetByte(index + 2); 

@@ -13,6 +13,10 @@
 #include <bitset>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
+#include <concepts>
+#include <sstream>
+#include <bitset>
 
 namespace psxjun{
 
@@ -70,6 +74,9 @@ public:
   std::uint32_t GetPC() const { return m_pc;}
   void SetPC(std::uint32_t addr){ m_pc = addr;}
 
+  std::uint32_t& PC() { return m_pc;}
+  const std::uint32_t& PC() const { return m_pc;}
+
   std::uint32_t GetHi() const { return m_hi;}
   std::uint32_t& Hi() {return m_hi;}
   std::uint32_t GetLow() const { return m_low;}
@@ -106,6 +113,18 @@ public:
     };
   } 
 
+  template<typename T1, typename T2, typename T3> 
+    requires std::is_integral<T1>::value && 
+             std::is_integral<T2>::value &&
+             std::is_integral<T3>::value
+  void UnimplementedOp(std::string&& op, T1 v1, T2 v2, T3 v3) const{
+    std::stringstream output;
+    output << "arguments: arg1 = " << v1 << ", arg2 = " << v2 << ", arg3 = " << v3 << '\n';
+    throw std::runtime_error{
+      "Opcode " + op + " is not implemented" + '\n' + output.str()
+    };
+  }
+
   // overflow detection
 
   bool arithmeticOverflow(std::uint32_t val1, std::uint32_t val2) const;
@@ -138,14 +157,26 @@ public:
   void AND(std::uint8_t rs, std::uint8_t rt, std::uint8_t rd);
   void ANDI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm);
 
-  // These instructions requires understanding of the branch delay slot
-  //
+  template<bool logging>
+  void ORI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm);
+
+  // Load and Store
+
+  template<bool logging>
+  void LUI(std::uint8_t rt, std::uint16_t imm);
+
+  template<bool logging>
+  void SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset);
+
   // Jumps
   // TODO: J INSTRUCTIONS!!!!
-  //
+
   // Branches
   // TODO: ALL THE B INSTRUCTIONS!!!!
-  //---------------------------------------------------------------//
+
+  template<bool logging>
+  void BEQ(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset);
+  
 
   // coprocessor
 

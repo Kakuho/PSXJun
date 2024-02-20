@@ -6,7 +6,7 @@ using namespace psxjun::memory;
 
 int main(){
   Psx system{"./../rom/SCPH1001.BIN"};
-  system.run(1);
+  system.run(10);
   /*
   Bios b{"./../rom/SCPH1001.BIN"};
   Bios& bios = b;
