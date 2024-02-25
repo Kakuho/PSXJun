@@ -3,6 +3,7 @@
 
 // MIPS-1 bit masks for convenience
 #include <cstdint>
+#include <type_traits>
 
 namespace psxjun{
 

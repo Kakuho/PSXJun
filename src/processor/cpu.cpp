@@ -1,7 +1,5 @@
 #include "cpu.hpp"
-#include "instruction.hpp"
-#include <cstdint>
-#include <stdexcept>
+#include <cstddef>
 
 namespace psxjun{
 
@@ -68,6 +66,13 @@ std::uint32_t CPU::ReadWord(std::size_t index) const{
   return word;
 }
 
+void CPU::WriteByte(std::size_t index, std::uint8_t val){
+  m_sysbus->WriteByte(index, val);
+}
+
+void CPU::WriteWord(std::size_t index, std::uint32_t val){
+
+}
 
 // CPU operational functions
 //---------------------------------------------------------------//
@@ -300,7 +305,10 @@ void CPU::LUI(std::uint8_t rt, std::uint16_t imm){
 
 template<bool logging>
 void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
-  Register(base) = Register(rt) + (int)offset;
+  // store word
+  // Do i need to implement Cache??
+  std::uint32_t offset_ext = signextend32(offset);
+  std::uint32_t vaddr = Register(base) + static_cast<int>(offset_ext);
 }
 
 // Branching

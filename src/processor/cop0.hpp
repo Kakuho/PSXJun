@@ -93,9 +93,9 @@ class Cop0{
     bool InterruptPending() const;
 };
 
-}
+} // processor
 
-}
+} // psxjun
 
 namespace psxjun{
   namespace debug{

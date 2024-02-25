@@ -5,7 +5,9 @@
 
 #include "./../system/bus.hpp"
 #include "instruction.hpp"
+#include "./../util/util.hpp"
 #include "exceptionVectors.hpp"
+#include "cop0.hpp"
 
 #include <array>
 #include <iostream>
@@ -43,19 +45,17 @@ class CPU{
   std::array<std::uint32_t, 32>   m_registers;
   std::uint32_t m_hi = 0;     // upper half of 64 bit multiplication
   std::uint32_t m_low = 0;    // lower half of 64 bit multiplication
-  std::uint32_t m_pc = 0;         // program counter
+  std::uint32_t m_pc = 0;     // program counter
   std::size_t   m_ticks;
+  arguments m_args;           // buffer for instructions parameters
+  std::uint32_t m_ibuffer;    // buffer for the current instruction
+  Cop0 m_cop0;
 
   // connections to the rest of the system
 
   system::SystemBus* m_sysbus;
 
-  // helpers for instructions, opcode decoding
-
-  arguments m_args;
-  std::uint32_t m_ibuffer;    // buffer for the current instruction
-
-public:
+  public:
 
   /* TODO: create initialisation functions */
 
@@ -87,15 +87,22 @@ public:
   void SetInstruction(std::uint32_t value){ m_ibuffer = value;}
   std::uint32_t GetInstruction() const{ return m_ibuffer;}
 
-  // N.B  : memory input / output instructions are written to the Data Cache
-  //      : r3000a is a little endian processor 
+  // N.B  : memory input / output instructions are written to the Data Cache.
+  //      : r3000a is a little endian processor.
   //      : r3000a defines a byte as 8 bit, halfword as 16 bits and a word as 
-  //        32 bits
-    
+  //        32 bits.
+  
+  // Memory read operations
+ 
   std::uint8_t ReadByte(std::size_t index) const;
   std::uint16_t GetHalfWord(std::size_t index1, std::size_t index2, 
                             std::size_t index3, std::size_t index4) const;
   std::uint32_t ReadWord(std::size_t index) const;
+
+  // Memory write operations
+
+  void WriteByte(std::size_t index, std::uint8_t val);
+  void WriteWord(std::size_t index, std::uint32_t val);
 
   // CPU operational functions
 
@@ -169,10 +176,8 @@ public:
   void SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset);
 
   // Jumps
-  // TODO: J INSTRUCTIONS!!!!
 
-  // Branches
-  // TODO: ALL THE B INSTRUCTIONS!!!!
+  // Branching
 
   template<bool logging>
   void BEQ(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset);
