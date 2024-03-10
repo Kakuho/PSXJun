@@ -71,7 +71,7 @@ void CPU::WriteByte(std::size_t index, std::uint8_t val){
 }
 
 void CPU::WriteWord(std::size_t index, std::uint32_t val){
-
+  m_sysbus->WriteWord(index, val);
 }
 
 // CPU operational functions
@@ -141,10 +141,11 @@ void CPU::Tick(){
           case OP_JR:     UnimplementedOp("JR"); break;
           case OP_SLT:    UnimplementedOp("SLT"); break;
           case OP_SLTU:   UnimplementedOp("SLTU"); break;
-          case OP_SLL:    UnimplementedOp("SLL"); break;
+          case OP_SLL:    SLL<true>(m_args.rs, m_args.rd, m_args.shamt); break;
           case OP_SRL:    UnimplementedOp("SRL"); break;
           case OP_SRA:    UnimplementedOp("SRA"); break;
         }
+        break;
       }
       // all other functions
       case OP_JP:        UnimplementedOp("JP"); break;
@@ -158,9 +159,9 @@ void CPU::Tick(){
       case SP_BLEZ:      UnimplementedOp("BLEZ"); break;
       case SP_BGTZ:      UnimplementedOp("BGTZ"); break;
       case SP_ADDI:      UnimplementedOp("ADDI"); break;
-      case SP_ADDIU:     UnimplementedOp("ADDIU"); break;
+      case SP_ADDIU:     ADDIU<true>(m_args.rs, m_args.rt, m_args.imm); break;
       case SP_LUI:       LUI<true>(m_args.rt, m_args.imm); break;
-      case SP_SW:        UnimplementedOp("SW"); break;
+      case SP_SW:        SW<true>(m_args.rs, m_args.rt, m_args.imm); break;
       case SP_LB:        UnimplementedOp("LB"); break;
       case SP_LW:        UnimplementedOp("LW"); break;
       case SP_LBU:       UnimplementedOp("LBU"); break;
@@ -202,20 +203,33 @@ bool CPU::arithmeticOverflow(std::uint32_t val1, std::uint32_t val2) const{
 
 // Exception triggers
 
-void CPU::triggerOVF(){
+void CPU::trigger_overflow_ex(){
   // TODO: Research to implement OVF
   std::cout << "AN OVERFLOW HAS OCCURED" << '\n';
-  throw std::runtime_error{"ERROR :: OVF Exception not implemented"};
+  throw std::runtime_error{"ERROR :: Overflow Exception not implemented"};
 }
 
+void CPU::trigger_addressLoad_ex(){
+  std::cout << "AN ADDRESS LOAD ERROR HAS OCCURED" << '\n';
+  throw std::runtime_error{"ERROR :: address load Exception not implemented"};
+}
+
+void CPU::trigger_addressStore_ex(){
+  std::cout << "AN ADDRESS STORE ERROR HAS OCCURED" << '\n';
+  throw std::runtime_error{"ERROR :: address store Exception not implemented"};
+}
+
+
 // CPU opcodes functions
+
+// ALU
 
 // ADDS - Must test the signedness of the operands
 void CPU::ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt){
   // Mnemonic: ADD rd, rs, rt
   // rs, rt are treated as signed integers, integer overflow may occur
   if(arithmeticOverflow(Register(rs), Register(rt))){
-    triggerOVF();
+    trigger_overflow_ex();
   }
   else{
     Register(rd) = Register(rs) + Register(rt);
@@ -226,20 +240,52 @@ void CPU::ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm){
   // mnemonic: ADDI rt, rs, imm
   // rs is a 32 bit register, imm is a 16 bit, so need sign extension
   if(arithmeticOverflow(Register(rs), imm)){
-    triggerOVF();
+    trigger_overflow_ex();
   }
   else{
     Register(rt) = Register(rs) + imm;
   }
 }
 
+template<bool logging>
 void CPU::ADDIU(std::uint8_t rt, std::uint8_t rs, std::uint16_t imm){
-  Register(rt) = Register(rs) + imm;
+  PC() = PC() + 4;
+  std::uint32_t result = Register(rs) + signextend32(imm);
+  std::cout << imm << ' ' << signextend32(imm) << '\n';
+  if(logging == true){
+    std::cout << "Input: opcode = ADDIU rt, rs, imm | asm = " 
+              << (unsigned)instruction::GetOpcode(m_ibuffer) 
+              << "\n"
+              << "rt = " <<  (unsigned)rt << ", rs = " <<  (unsigned)rs << '\n'
+              << "gpr[rt] = " <<  (unsigned)Register(rt) 
+              << ", gpr[rs] = " <<  (unsigned)Register(rs)
+              << ", imm = " <<  (unsigned)imm << '\n'
+              << "Output: register " << (unsigned)rs << " = " << result << '\n';
+  }
+  Register(rt) = result;
 }
 
 void CPU::ADDU(std::uint8_t rd, std::uint8_t rs, std::uint8_t rt){
   // signedness doesn't matter in arithmetric
   Register(rd) = Register(rs) + Register(rt);
+}
+
+template<bool logging>
+void CPU::SLL(std::int8_t rt,  std::int8_t rd, std::int8_t sa){
+  PC() = PC() + 4;
+  std::uint32_t result = Register(rt) << sa;
+  if(logging == true){
+    std::cout << "Input: opcode = SLL rs, rt, sa | asm = " 
+              << (unsigned)instruction::GetOpcode(m_ibuffer) 
+              << "\n"
+              << "rt = " <<  (unsigned)rt << ", rd = " <<  (unsigned)rd << '\n'
+              << "gpr[rt] = " <<  (unsigned)Register(rt) 
+              << ", gpr[rd] = " <<  (unsigned)Register(rd)
+              << "sa = " <<  (unsigned)sa << '\n'
+              << "Output: register " << rd << " = " << result << '\n';
+  }
+
+  Register(rd) = result;
 }
 
 // Mulitplication Division
@@ -273,6 +319,7 @@ void CPU::ANDI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
   Register(rs) = Register(rt) & imm;
 }
 
+
 template<bool logging>
 void CPU::ORI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
   Register(rs) = Register(rt) | imm;
@@ -287,6 +334,7 @@ void CPU::ORI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
               << "imm = " << imm << '\n'
               << "Output: register " << rs << " = " << Register(rs) << '\n';
   }
+
 }
 
 // Load and Store
@@ -295,12 +343,14 @@ template<bool logging>
 void CPU::LUI(std::uint8_t rt, std::uint16_t imm){
   std::uint32_t val = imm;
   Register(rt) = (val << 16);
+
   PC() = PC() + 4;
   if(logging == true){
     std::cout << "Input: opcode = LUI, asm = " <<  (unsigned)instruction::GetOpcode(m_ibuffer) 
               << ", rt = " <<  (unsigned)rt << ", imm = " << imm << '\n'
               << "Output: register " << rt << " = " << Register(rt) << '\n';
   }
+
 }
 
 template<bool logging>
@@ -309,6 +359,22 @@ void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
   // Do i need to implement Cache??
   std::uint32_t offset_ext = signextend32(offset);
   std::uint32_t vaddr = Register(base) + static_cast<int>(offset_ext);
+  PC() = PC() + 4;
+  if(logging == true){
+    std::cout << "Input: menmonic = SW, asm = " <<  (unsigned)instruction::GetOpcode(m_ibuffer) 
+              << ", base = " <<  (unsigned)base << ", rt = " << (unsigned)rt 
+              << ", value in rt = " << Register(rt) << '\n'
+              << ", offset = " << (unsigned)offset << '\n'
+              << ", vaddr = " << vaddr << '\n';
+  }
+  if(vaddr & 0x3){
+    trigger_addressStore_ex();
+  }
+  if(m_cop0.GetStatus(status::IsC)){
+    // this is for cache isolation - i.e, the writes is not back to memory, but 
+    // onto the cache
+  }
+  WriteWord(vaddr, Register(rt));
 }
 
 // Branching

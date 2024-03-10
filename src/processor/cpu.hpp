@@ -138,7 +138,9 @@ class CPU{
 
   // Exception Triggers
 
-  void triggerOVF();  // OVF is the name for arithmetic overflow excpetion
+  void trigger_overflow_ex();  // OVF is the name for arithmetic overflow excpetion
+  void trigger_addressLoad_ex();
+  void trigger_addressStore_ex();
 
   // helper
   
@@ -148,11 +150,19 @@ class CPU{
   
   void ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt);
   void ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm);
+
+  template<bool logging>
   void ADDIU(std::uint8_t rt, std::uint8_t rs, std::uint16_t imm);
+
   void ADDU(std::uint8_t rd, std::uint8_t rs, std::uint8_t rt);
 
   void SUB(std::int8_t rd, std::uint8_t rs, std::uint8_t rt);
   void SUBU(std::int8_t rd, std::int8_t rs, std::int8_t rt);
+
+  // Bitwise
+
+  template<bool logging>
+  void SLL(std::int8_t rt, std::int8_t rd, std::int8_t sa);
 
   // Multiplication Division
 
