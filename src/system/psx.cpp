@@ -1,5 +1,4 @@
 #include "psx.hpp"
-#include <memory>
 
 namespace psxjun{
 
@@ -10,12 +9,14 @@ Psx::Psx():
   m_ram{ std::make_unique<Ram>() },
   m_bios{ std::make_unique<Bios>()},
   m_scratchpad{ std::make_unique<ScratchPad>() },
+  m_memory_controller{ std::make_unique<MemoryController>() },
   m_bus{ 
     std::make_unique<SystemBus>(
       *m_cpu,
       *m_bios,
       *m_ram,
-      *m_scratchpad
+      *m_scratchpad,
+      *m_memory_controller
     ) 
   }
 {
@@ -26,12 +27,14 @@ Psx::Psx(std::string&& biosFilePath):
   m_ram{ std::make_unique<Ram>() },
   m_bios{ std::make_unique<Bios>(biosFilePath)},
   m_scratchpad{ std::make_unique<ScratchPad>() },
+  m_memory_controller{ std::make_unique<MemoryController>() },
   m_bus{ 
     std::make_unique<SystemBus>(
       *m_cpu,
       *m_bios,
       *m_ram,
-      *m_scratchpad
+      *m_scratchpad,
+      *m_memory_controller
     ) 
   }
 {

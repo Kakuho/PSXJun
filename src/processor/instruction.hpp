@@ -94,7 +94,7 @@ namespace instruction{
   //
   // where [OPCODE] is a 6-bit string, and IMM is a 26-bit string representing an address to jump to
 
-  static constexpr std::uint8_t OP_JP  = 0x02;
+  static constexpr std::uint8_t OP_J  = 0x02;
   static constexpr std::uint8_t OP_JAL = 0x03;
 
   // I - type instructions (Immediate) are encoded as such:

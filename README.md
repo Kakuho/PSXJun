@@ -26,6 +26,9 @@ Below lists the resources I used in order to build my emulator. I will be adding
 * IDT R30xx Family Software Reference Manual
 	* Details behavioral functionality of the R30xx family of MIPS microprocessors. The PSX uses a R3000A microprocessor.
 
+* Playstation Specifications - psx-spx
+  * Website documentation derived from king Nocash's Nocash PSXSPX Playstation Specifications. 
+
 ## Other PSX Emulators
 
 Please checkout the following emulators, which inspired me to make my own. I guarantee they run much better than PSXJun:

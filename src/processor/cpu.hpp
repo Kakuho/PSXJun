@@ -186,6 +186,9 @@ class CPU{
   void SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset);
 
   // Jumps
+  
+  template<bool logging>
+  void J();
 
   // Branching
 

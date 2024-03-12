@@ -1,4 +1,5 @@
 #include "cpu.hpp"
+#include "instruction.hpp"
 #include <cstddef>
 
 namespace psxjun{
@@ -148,27 +149,27 @@ void CPU::Tick(){
         break;
       }
       // all other functions
-      case OP_JP:        UnimplementedOp("JP"); break;
-      case OP_JAL:       UnimplementedOp("JAL"); break;
-      case SP_SLTI:      UnimplementedOp("SLTI"); break;
-      case SP_SLTIU:     UnimplementedOp("SLTIU"); break;
-      case SP_ANDI:      UnimplementedOp("ANDI"); break;
-      case SP_ORI:       ORI<true>(m_args.rs, m_args.rt, m_args.imm); break;
-      case SP_BEQ:       BEQ<true>(m_args.rs, m_args.rt, m_args.imm); break;
-      case SP_BNE:       UnimplementedOp("BNE"); break;
-      case SP_BLEZ:      UnimplementedOp("BLEZ"); break;
-      case SP_BGTZ:      UnimplementedOp("BGTZ"); break;
-      case SP_ADDI:      UnimplementedOp("ADDI"); break;
-      case SP_ADDIU:     ADDIU<true>(m_args.rs, m_args.rt, m_args.imm); break;
-      case SP_LUI:       LUI<true>(m_args.rt, m_args.imm); break;
-      case SP_SW:        SW<true>(m_args.rs, m_args.rt, m_args.imm); break;
-      case SP_LB:        UnimplementedOp("LB"); break;
-      case SP_LW:        UnimplementedOp("LW"); break;
-      case SP_LBU:       UnimplementedOp("LBU"); break;
-      case SP_LHU:       UnimplementedOp("LHU"); break;
-      case SP_SB:        UnimplementedOp("SB"); break;
-      case SP_SH:        UnimplementedOp("SH"); break;
-      case OP_MFC0:      UnimplementedOp("MFC0"); break;
+      case OP_J:        J<true>(); break;
+      case OP_JAL:      UnimplementedOp("JAL"); break;
+      case SP_SLTI:     UnimplementedOp("SLTI"); break;
+      case SP_SLTIU:    UnimplementedOp("SLTIU"); break;
+      case SP_ANDI:     UnimplementedOp("ANDI"); break;
+      case SP_ORI:      ORI<true>(m_args.rs, m_args.rt, m_args.imm); break;
+      case SP_BEQ:      BEQ<true>(m_args.rs, m_args.rt, m_args.imm); break;
+      case SP_BNE:      UnimplementedOp("BNE"); break;
+      case SP_BLEZ:     UnimplementedOp("BLEZ"); break;
+      case SP_BGTZ:     UnimplementedOp("BGTZ"); break;
+      case SP_ADDI:     UnimplementedOp("ADDI"); break;
+      case SP_ADDIU:    ADDIU<true>(m_args.rs, m_args.rt, m_args.imm); break;
+      case SP_LUI:      LUI<true>(m_args.rt, m_args.imm); break;
+      case SP_SW:       SW<true>(m_args.rs, m_args.rt, m_args.imm); break;
+      case SP_LB:       UnimplementedOp("LB"); break;
+      case SP_LW:       UnimplementedOp("LW"); break;
+      case SP_LBU:      UnimplementedOp("LBU"); break;
+      case SP_LHU:      UnimplementedOp("LHU"); break;
+      case SP_SB:       UnimplementedOp("SB"); break;
+      case SP_SH:       UnimplementedOp("SH"); break;
+      case OP_MFC0:     UnimplementedOp("MFC0"); break;
     }
     std::cout << "------------------------------------------------\n";
   }
@@ -343,12 +344,11 @@ template<bool logging>
 void CPU::LUI(std::uint8_t rt, std::uint16_t imm){
   std::uint32_t val = imm;
   Register(rt) = (val << 16);
-
   PC() = PC() + 4;
   if(logging == true){
     std::cout << "Input: opcode = LUI, asm = " <<  (unsigned)instruction::GetOpcode(m_ibuffer) 
-              << ", rt = " <<  (unsigned)rt << ", imm = " << imm << '\n'
-              << "Output: register " << rt << " = " << Register(rt) << '\n';
+              << ", rt = " <<  (unsigned)rt << ", imm = " << (unsigned)imm << '\n'
+              << "Output: register " << (unsigned)rt << " = " << (unsigned)Register(rt) << '\n';
   }
 
 }
@@ -361,9 +361,10 @@ void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
   std::uint32_t vaddr = Register(base) + static_cast<int>(offset_ext);
   PC() = PC() + 4;
   if(logging == true){
-    std::cout << "Input: menmonic = SW, asm = " <<  (unsigned)instruction::GetOpcode(m_ibuffer) 
-              << ", base = " <<  (unsigned)base << ", rt = " << (unsigned)rt 
-              << ", value in rt = " << Register(rt) << '\n'
+    std::cout << std::hex
+              << "Input: menmonic = SW, asm = " <<  (unsigned)instruction::GetOpcode(m_ibuffer) 
+              << ", base = " <<  (unsigned)base << ", value in base = " << (unsigned)Register(base)
+              << "\nrt = " << (unsigned)rt << ", value in rt = " << (unsigned)Register(rt) << '\n'
               << ", offset = " << (unsigned)offset << '\n'
               << ", vaddr = " << vaddr << '\n';
   }
@@ -375,6 +376,28 @@ void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
     // onto the cache
   }
   WriteWord(vaddr, Register(rt));
+}
+
+// jumps
+
+template<bool logging>
+void CPU::J(){
+  // TODO: Implement logging
+  // the branch delay slots occurs first and then we jump
+  // first form the address to jump to
+  std::uint32_t imm = instruction::GetAddr(m_ibuffer);
+  std::uint32_t addr = ((PC() + 1) & (0b1111u << 28)) | (imm << 2);
+  if(logging){
+    std::cout << addr << '\n';
+    std::cout << "-----------------------------\n";
+  }
+  // I increment PC(), tick, and then proceed to handle op JP:
+  std::cout << "BRANCH DELAY TIME!!!!\n";
+  PC() += 1;
+  Tick();
+  // now we finish handling JP
+  PC() = addr;
+
 }
 
 // Branching
@@ -392,6 +415,9 @@ void CPU::BEQ(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset){
     std::cout << "BEQ DELAY OP" << '\n';
   }
 }
+
+// Coprocessor
+
 
 } // namespace processor
 
