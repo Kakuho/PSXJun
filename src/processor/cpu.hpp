@@ -46,7 +46,7 @@ class CPU{
   std::uint32_t m_hi = 0;     // upper half of 64 bit multiplication
   std::uint32_t m_low = 0;    // lower half of 64 bit multiplication
   std::uint32_t m_pc = 0;     // program counter
-  std::size_t   m_ticks;
+  std::size_t   m_ticks = 0;
   arguments m_args;           // buffer for instructions parameters
   std::uint32_t m_ibuffer;    // buffer for the current instruction
   Cop0 m_cop0;
@@ -200,7 +200,10 @@ class CPU{
 
   void LWC0(std::uint8_t rt, std::uint16_t offset);
   void SWC0(std::uint8_t rt, std::uint16_t offset);
+
+  template<bool logging>
   void MTC0(std::uint8_t rt, std::uint8_t rd);
+
   void MFC0(std::uint8_t rt, std::uint8_t rd);
   void CTC0(std::uint8_t rt, std::uint8_t rd);
   void CFC0(std::uint8_t rt, std::uint8_t rd);
