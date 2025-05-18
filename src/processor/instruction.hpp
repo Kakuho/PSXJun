@@ -9,6 +9,8 @@ namespace psxjun{
 
 namespace instruction{
 
+  // There is a lot of duplication, a refactoring is urgent.
+
   // Operands
     
   constexpr std::uint32_t OPCODE  = 0xFC'00'00'00;
@@ -18,14 +20,20 @@ namespace instruction{
   constexpr std::uint32_t SHAMT   = 0x00'00'07'C0;
   constexpr std::uint32_t FUNCT   = 0x00'00'00'3F;
   constexpr std::uint32_t IMM     = 0x00'00'FF'FF;
-  constexpr std::uint32_t ADDR     = 0x03'FF'FF'FF;
+  constexpr std::uint32_t ADDR    = 0x03'FF'FF'FF;
+
+  // coprocessor instruction operands (note they share rt and rd above)
+
+  constexpr std::uint32_t IMM25             = 0x01'FF'FF'FF;
+  constexpr std::uint32_t COP_FUNCT_HEAD_0  = 0x03'E0'00'00;   // literally the same as RS
+  constexpr std::uint32_t COP_FUNCT_HEAD_1  = 0x00'1F'00'00;   // literally the same as RT
+  constexpr std::uint32_t COP_FUNCT_TAIL    = 0x00'00'00'3F;   // literally the same as FUNCT
     
   // helpful functions for operands
   // The shifts are to rid the unncessary digits
 
   static inline std::uint8_t GetOpcode(std::uint32_t instruction){
     return (instruction & OPCODE) >> 26;
-
   }
 
   static inline std::uint8_t GetRs(std::uint32_t instruction){
@@ -122,9 +130,73 @@ namespace instruction{
   static constexpr std::uint8_t SP_SB  = 0x28;
   static constexpr std::uint8_t SP_SH  = 0x29;
     
-  // Coprocessor Instructions
-  
-  static constexpr std::uint8_t OP_MFC0  = 0x10;
+  // Coprocessor instructions
+
+  // bits 31 ... 26
+
+  static constexpr std::uint8_t OP_SWC0 = 0x30;
+  static constexpr std::uint8_t OP_SWC2 = 0x32;
+
+  static constexpr std::uint8_t OP_LWC0 = 0x38;
+  static constexpr std::uint8_t OP_LWC2 = 0x3A;
+
+  static constexpr std::uint8_t SELECT_COP0 = 0x10; // COP0 = System Status COP
+  static constexpr std::uint8_t SELECT_COP2 = 0x12; // COP2 = GTE
+
+  // General coprocessor instructions
+  // bits 25...21 - _HEAD or _0
+  // bits 20...16 - _1
+  // bits 5...0   - _TAIL
+
+  static constexpr std::uint8_t OP_MFC0_HEAD = 0x00;
+  static constexpr std::uint8_t OP_MFC0_TAIL = 0x00;
+
+  static constexpr std::uint8_t OP_CFC0_HEAD = 0x02;
+  static constexpr std::uint8_t OP_CFC0_TAIL = 0x00;
+
+  static constexpr std::uint8_t OP_MTC0_HEAD = 0x04;
+  static constexpr std::uint8_t OP_MTC0_TAIL = 0x00;
+
+  static constexpr std::uint8_t OP_CTC0_HEAD = 0x06;
+  static constexpr std::uint8_t OP_CTC0_TAIL = 0x00;
+
+  static constexpr std::uint8_t OP_BC0F_HEAD_0 = 0x08;
+  static constexpr std::uint8_t OP_BC0F_HEAD_1 = 0x00;
+
+  static constexpr std::uint8_t OP_BC0T_HEAD_0 = 0x08;
+  static constexpr std::uint8_t OP_BC0T_HEAD_1 = 0x01;
+
+  // COP0 only instructions
+
+  static constexpr std::uint8_t OP_COP025 = 0x1;
+
+  static constexpr std::uint8_t OP_COP0RFE_HEAD = 0x10;
+  static constexpr std::uint8_t OP_COP0RFE_TAIL = 0x10;
+
+  /*
+   * https://psx-spx.consoledev.net/cpuspecifications/#coprocessor-opcodeparameter-encoding
+   *
+   * the opcode table is like so:
+   * opcode op1    rt     rd            tail
+    31..26 |25..21|20..16|15..11|10..6 |  5..0  |
+     6bit  | 5bit | 5bit | 5bit | 5bit |  6bit  |
+    -------+------+------+------+------+--------+------------
+    0100nn |0|0000| rt   | rd   | N/A  | 000000 | MFCn rt,rd_dat  ;rt = dat
+    0100nn |0|0010| rt   | rd   | N/A  | 000000 | CFCn rt,rd_cnt  ;rt = cnt
+    0100nn |0|0100| rt   | rd   | N/A  | 000000 | MTCn rt,rd_dat  ;dat = rt
+    0100nn |0|0110| rt   | rd   | N/A  | 000000 | CTCn rt,rd_cnt  ;cnt = rt
+    0100nn |0|1000|00000 | <--immediate16bit--> | BCnF target ;jump if false
+    0100nn |0|1000|00001 | <--immediate16bit--> | BCnT target ;jump if true
+    0100nn |1| <--------immediate25bit--------> | COPn imm25
+    010000 |1|0000| N/A  | N/A  | N/A  | 000001 | COP0 01h  ;=TLBR, unused on PS1
+    010000 |1|0000| N/A  | N/A  | N/A  | 000010 | COP0 02h  ;=TLBWI, unused on PS1
+    010000 |1|0000| N/A  | N/A  | N/A  | 000110 | COP0 06h  ;=TLBWR, unused on PS1
+    010000 |1|0000| N/A  | N/A  | N/A  | 001000 | COP0 08h  ;=TLBP, unused on PS1
+    010000 |1|0000| N/A  | N/A  | N/A  | 010000 | COP0 10h  ;=RFE
+    1100nn | rs   | rt   | <--immediate16bit--> | LWCn rt_dat,[rs+imm]
+    1110nn | rs   | rt   | <--immediate16bit--> | SWCn rt_dat,[rs+imm]
+    thus the discriminators are bits 31...26, 25...21, 20...16, and 5...0
+   */
 
 } // namespace instruction
 

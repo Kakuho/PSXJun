@@ -50,10 +50,17 @@ class CPU{
   arguments m_args;           // buffer for instructions parameters
   std::uint32_t m_ibuffer;    // buffer for the current instruction
   Cop0 m_cop0;
+  std::uint8_t coprocessor_useable_bm = 0;
 
   // connections to the rest of the system
 
   system::SystemBus* m_sysbus;
+
+  // useful for debugging
+
+  // full logs everything
+  // instruction only logs the instruction
+  enum class cpuLogLevel{full, instruction, none};
 
   public:
 
@@ -134,7 +141,8 @@ class CPU{
 
   // overflow detection
 
-  bool arithmeticOverflow(std::uint32_t val1, std::uint32_t val2) const;
+  inline bool signed_add_overflow(std::uint32_t val1, std::uint32_t val2) const;
+  inline bool signed_sub_overflow(std::uint32_t val1, std::uint32_t val2) const;
 
   // Exception Triggers
 
@@ -149,6 +157,8 @@ class CPU{
   // ALU
   
   void ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt);
+  
+  template<bool logging>
   void ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm);
 
   template<bool logging>
@@ -185,6 +195,9 @@ class CPU{
   template<bool logging>
   void SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset);
 
+  template<bool logging>
+  void LW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset);
+
   // Jumps
   
   template<bool logging>
@@ -194,8 +207,10 @@ class CPU{
 
   template<bool logging>
   void BEQ(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset);
-  
 
+  template<bool logging>
+  void BNE(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset);
+  
   // coprocessor
 
   void LWC0(std::uint8_t rt, std::uint16_t offset);
@@ -215,6 +230,10 @@ class CPU{
   void CACHE(std::uint8_t base, std::uint8_t op, std::int16_t imm){
     throw std::runtime_error{"Instruction CACHE is not implemented"};
   }
+
+  private:
+
+  void dumpState() const;
 
 };
 

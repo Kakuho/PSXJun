@@ -1,6 +1,8 @@
 #include "cpu.hpp"
 #include "instruction.hpp"
 #include <cstddef>
+#include <cstdint>
+#include <stdexcept>
 
 namespace psxjun{
 
@@ -111,7 +113,7 @@ void CPU::Tick(){
   Fetch();
   std::cout << "tick = " << std::dec << m_ticks << '\n' << std::hex
             << "pc = " << (unsigned)GetPC() << '\n'
-            << "instruction: " << std::hex << m_ibuffer << '\n'
+            << "instruction: " << std::hex << std::setw(8) << std::setfill('0') << m_ibuffer << '\n'
             << std::bitset<32>{m_ibuffer} << '\n';
   std::uint8_t opcode = instruction::GetOpcode(GetInstruction());  // decode step
   Decode();
@@ -153,15 +155,15 @@ void CPU::Tick(){
     case SP_ANDI:     UnimplementedOp("ANDI"); break;
     case SP_ORI:      ORI<true>(m_args.rs, m_args.rt, m_args.imm); break;
     case SP_BEQ:      BEQ<true>(m_args.rs, m_args.rt, m_args.imm); break;
-    case SP_BNE:      UnimplementedOp("BNE"); break;
+    case SP_BNE:      BNE<true>(m_args.rs, m_args.rt, m_args.imm); break;
     case SP_BLEZ:     UnimplementedOp("BLEZ"); break;
     case SP_BGTZ:     UnimplementedOp("BGTZ"); break;
-    case SP_ADDI:     UnimplementedOp("ADDI"); break;
+    case SP_ADDI:     ADDI<true>(m_args.rt, m_args.rs, m_args.imm); break;
     case SP_ADDIU:    ADDIU<true>(m_args.rs, m_args.rt, m_args.imm); break;
     case SP_LUI:      LUI<true>(m_args.rt, m_args.imm); break;
     case SP_SW:       SW<true>(m_args.rs, m_args.rt, m_args.imm); break;
     case SP_LB:       UnimplementedOp("LB"); break;
-    case SP_LW:       UnimplementedOp("LW"); break;
+    case SP_LW:       LW<true>(m_args.rs, m_args.rt, m_args.imm); break;
     case SP_LBU:      UnimplementedOp("LBU"); break;
     case SP_LHU:      UnimplementedOp("LHU"); break;
     case SP_SB:       UnimplementedOp("SB"); break;
@@ -202,15 +204,27 @@ void CPU::Decode(){
 
 // Exception testers
 
-bool CPU::arithmeticOverflow(std::uint32_t val1, std::uint32_t val2) const{
+// note signed integers are represented as 32bit two's complement.
+// overflow may only occur:
+//  1) if we add 2 +ves, and we get a -ve
+//  2) if we subtract 2 -ves, and we get a +ve
+
+bool CPU::signed_sub_overflow(std::uint32_t val1, std::uint32_t val2) const{
   std::uint32_t result = val1 + val2;
-  bool overflowLow = (std::int32_t)val1 > 0 && (std::int32_t)val2 > 0 
-    && result < 0;
-  bool overflowHigh = (std::int32_t)val1 < 0 && (std::int32_t)val2 < 0 
-    && result > 0;
+  bool is_overflow = ((std::int32_t)val1 < 0) && ((std::int32_t)val2 < 0)
+    && (result > 0);
   std::bitset<32> bitpattern = result;
   std::cout << result << '|' << bitpattern << '\n';
-  return (overflowLow || overflowHigh)? true: false;
+  return is_overflow? true: false;
+}
+
+bool CPU::signed_add_overflow(std::uint32_t val1, std::uint32_t val2) const{
+  std::uint32_t result = val1 + val2;
+  bool is_overflow = ((std::int32_t)val1 > 0) && ((std::int32_t)val2 > 0)
+    && (result < 0);
+  std::bitset<32> bitpattern = result;
+  std::cout << result << '|' << bitpattern << '\n';
+  return is_overflow? true: false;
 }
 
 // Exception triggers
@@ -237,10 +251,11 @@ void CPU::trigger_addressStore_ex(){
 // ALU
 
 // ADDS - Must test the signedness of the operands
+
 void CPU::ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt){
   // Mnemonic: ADD rd, rs, rt
   // rs, rt are treated as signed integers, integer overflow may occur
-  if(arithmeticOverflow(Register(rs), Register(rt))){
+  if(signed_add_overflow(Register(rs), Register(rt))){
     trigger_overflow_ex();
   }
   else{
@@ -248,14 +263,26 @@ void CPU::ADD(std::int8_t rd, std::int8_t rs, std::int8_t rt){
   }
 }
 
+template<bool logging>
 void CPU::ADDI(std::int8_t rt, std::int8_t rs, std::int16_t imm){
-  // mnemonic: ADDI rt, rs, imm
-  // rs is a 32 bit register, imm is a 16 bit, so need sign extension
-  if(arithmeticOverflow(Register(rs), imm)){
+  std::uint32_t result = Register(rs) + signextend32(imm);
+  if(logging){
+    std::cout << "Input: ADDI rt, rs, imm" << "\n"
+              << "rs = " <<  (unsigned)rs << ", gpr[rs] = " <<  (unsigned)Register(rs) << '\n'
+              << "rt = " <<  (unsigned)rt << ", gpr[rt] = " <<  (unsigned)Register(rt) << '\n'
+              << "imm = " <<  (unsigned)imm << '\n'
+              << "Calculation: val = signextend32(imm) + gpr[rs], gpr[rt] = val" << '\n'
+              << "signextend32(imm) = " << signextend32(imm) << '\n'
+              << "val = " <<  result << '\n';
+  }
+  if(signed_add_overflow(Register(rs), signextend32(imm))){
+    if(logging) std::cout << "Output: add overflow occured, no modification" << '\n';
     trigger_overflow_ex();
   }
   else{
-    Register(rt) = Register(rs) + imm;
+    if(logging) std::cout << "Output: gpr[" << (unsigned)Register(rt) << "] = " << result << '\n';
+    Register(rt) = result;
+    PC() += 4;
   }
 }
 
@@ -263,7 +290,7 @@ template<bool logging>
 void CPU::ADDIU(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
   PC() = PC() + 4;
   std::uint32_t result = Register(rs) + signextend32(imm);
-  if(logging == true){
+  if(logging){
     std::cout << "Input: ADDIU rt, rs, imm | asm = " 
               << (unsigned)instruction::GetOpcode(m_ibuffer) 
               << "\n"
@@ -275,6 +302,7 @@ void CPU::ADDIU(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
               << "val = " <<  result << '\n'
               << "Output: gpr[" << (unsigned)rt << "] = " << result << '\n';
   }
+
   Register(rt) = result;
 }
 
@@ -287,7 +315,7 @@ template<bool logging>
 void CPU::SLL(std::int8_t rt,  std::int8_t rd, std::int8_t sa){
   PC() = PC() + 4;
   std::uint32_t result = Register(rt) << sa;
-  if(logging == true){
+  if(logging){
     std::cout << "Input: SLL rs, rt, sa" << "\n"
               << "rt = " <<  (unsigned)rt << ", gpr[rt] = " <<  (unsigned)Register(rt) << '\n'
               << "rd = " <<  (unsigned)rd << ", gpr[rd] = " <<  (unsigned)Register(rd) << '\n'
@@ -334,7 +362,7 @@ void CPU::ANDI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
 template<bool logging>
 void CPU::ORI(std::uint8_t rs, std::uint8_t rt, std::uint16_t imm){
   std::uint32_t val = Register(rs) | imm;
-  if(logging == true){
+  if(logging){
     std::cout << "Input: ORI rs, rt, imm | asm = " 
               << (unsigned)instruction::GetOpcode(m_ibuffer) 
               << "\n"
@@ -377,8 +405,7 @@ void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
   PC() = PC() + 4;
   if(logging == true){
     std::cout << std::hex
-              << "Input: SW rt, offset(base) | asm = " 
-              <<  (unsigned)instruction::GetOpcode(m_ibuffer) << '\n'
+              << "Input: SW rt, offset(base)" << '\n'
               << "base = " <<  (unsigned)base 
               << ", gpr[base] = " << (unsigned)Register(base) << '\n'
               << "rt = " << (unsigned)rt << ", gpr[rt] = " << (unsigned)Register(rt) << '\n'
@@ -387,9 +414,9 @@ void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
               << "RAM[vaddr] = gpr[rt]" <<'\n' 
               << "vaddr = " << vaddr << '\n';
   }
+  // word boundary exception. Boundaries must be a multiple of 4, 
   if(vaddr & 0x3){
-    if(logging == true)
-      std::cout << "Output: Address Store Exception" << '\n';
+    if(logging == true) std::cout << "Output: Address Store Exception" << '\n';
     trigger_addressStore_ex();
   }
   if(m_cop0.GetStatus(status::IsC)){
@@ -402,6 +429,42 @@ void CPU::SW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
     std::cout << "Output: RAM[" << vaddr << "] = gpr[" << (unsigned)rt << "] = " 
               << (unsigned)Register(rt) << '\n';
   WriteWord(vaddr, Register(rt));
+
+}
+
+
+template<bool logging>
+void CPU::LW(std::uint8_t base, std::uint8_t rt, std::uint16_t offset){
+  std::uint32_t offset_ext = signextend32(offset);
+  std::uint32_t vaddr = Register(base) + static_cast<int>(offset_ext);
+  if(logging == true){
+    std::cout << std::hex
+              << "Input: LW rt, offset(base)" << '\n'
+              << "base = " <<  (unsigned)base 
+              << ", gpr[base] = " << (unsigned)Register(base) << '\n'
+              << "rt = " << (unsigned)rt << ", gpr[rt] = " << (unsigned)Register(rt) << '\n'
+              << "offset = " << (unsigned)offset << '\n'
+              << "Calculation: vaddr = gpr[base] + signextend32(offset), "
+              << "gpr[rt] = RAM[vaddr]" <<'\n' 
+              << "vaddr = " << vaddr << '\n'
+              << "RAM[vaddr] = " << (unsigned)ReadWord(vaddr) << '\n';
+  }
+  // word boundary exception. Boundaries must be a multiple of 4, 
+  if(vaddr & 0x3){
+    if(logging == true) std::cout << "Output: Address Store Exception" << '\n';
+    trigger_addressStore_ex();
+  }
+  if(m_cop0.GetStatus(status::IsC)){
+    if(logging == true)
+      std::cout << "Output: Cache isolation" << '\n';
+    // this is for cache isolation - i.e, the writes is not back to memory, but 
+    // onto the cache
+  }
+  if(logging == true)
+    std::cout << "Output: gpr[" << (unsigned)rt << "] = RAM[" << vaddr << "] = "
+              << (unsigned)ReadWord(vaddr) << '\n';
+  Register(rt) = ReadWord(vaddr);
+  PC() = PC() + 4;
 }
 
 // jumps
@@ -412,22 +475,25 @@ void CPU::J(){
   // the branch delay slots occurs first and then we jump
   // first form the address to jump to
   std::uint32_t imm = instruction::GetAddr(m_ibuffer);
-  // delay slot is the instruction in the immediate next
+  // delay slot is the instruction in the immediate next of the J instruction
   std::uint32_t addr = ((PC() + 4) & (0b1111u << 28)) | (imm << 2);
   if(logging){
-    std::cout << "Mnemonic = J" << '\n' 
-              << "imm = " << imm << ", vaddr = " << addr << '\n';
-    std::cout << "-----------------------------\n";
+    std::cout << "Input: J target" << '\n' 
+              << "target = " << imm << '\n'
+              << "Computation: vaddr = (PC() + 4)_{31...28}  | target << 2" << '\n'
+              << "vaddr = " << addr << '\n'
+              << "-----------------------------\n";
   }
   // I increment PC(), tick, and then proceed to handle op JP:
-  std::cout << "BRANCH DELAY TIME!!!!\n";
+  std::cout << "BRANCH DELAY TIME!!!!\n"
+
+            << "-----------------------------\n";
   PC() += 4;
   Tick();
   // now we finish handling J
   PC() = addr;
   if(logging){
-    std::cout << "-----------------------------\n";
-    std::cout << "PC() = " << PC() << '\n';
+    std::cout << "Output of J: pc = " << PC() << '\n';
   }
 }
 
@@ -439,10 +505,49 @@ void CPU::BEQ(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset){
     std::cout << "rs = " << (unsigned)rs << ", rt = " << (unsigned)rt 
               << ", offset = " << offset << '\n';
   }
+
   std::int16_t realoffset = offset;
   if(Register(rs) == Register(rt)){
     PC() = PC() + 1 + realoffset;
     std::cout << "BEQ DELAY OP" << '\n';
+  }
+}
+
+template <bool logging>
+void CPU::BNE(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset){
+  std::uint32_t vaddr = (PC()+4) + static_cast<int>(signextend32(offset << 2));
+  if(logging == true){
+    std::cout << std::hex
+              << "Input: BNE rs, rt, offset" << '\n'
+              << "rs = " <<  (unsigned)rs 
+              << ", gpr[rs] = " << (unsigned)Register(rs) << '\n'
+              << "rt = " << (unsigned)rt << ", gpr[rt] = " << (unsigned)Register(rt) << '\n'
+              << "offset = " << (unsigned)offset << '\n'
+              << "Calculation: vaddr = NEXTPC + signextend32(offset << 2), "
+              << "if gpr[rs] != gpr[rt], branch to vaddr with delay" <<'\n' 
+              << "NEXTPC = " << PC() + 4 << '\n'
+              << "offset << 2 = " << (unsigned)(offset << 2) << '\n'
+              << "signextend32(offset<<2) = " << signextend32(offset << 2) << '\n'
+  /*TODO: -*/ << "integral signextend32(offset<<2) = " << (int)signextend32(offset << 2) << '\n'
+              << "vaddr = " << vaddr << '\n';
+  }
+
+  if(Register(rs) != Register(rt)){
+    if(logging){
+      std::cout << "Output: gpr[rs] != gpr[rt], so we branch" << '\n' 
+                << "-----------------------------\n"
+                << "DELAY SLOT" << '\n'
+                << "-----------------------------\n";
+    }
+    PC() = PC() + 4;
+    Tick();
+    // end of delay slot
+    PC() = vaddr;
+    if(logging) std::cout << "pc = " << (unsigned)vaddr << '\n';
+  }
+  else{
+    if(logging) std::cout << "Output: gpr[rs] == gpr[rt], so no branch\n";
+    PC() = PC() + 4;
   }
 }
 
@@ -451,11 +556,20 @@ void CPU::BEQ(std::uint8_t rs, std::uint8_t rt, std::uint16_t offset){
 template<bool logging>
 void CPU::MTC0(std::uint8_t rt, std::uint8_t rd){
   if(logging == true){
-    std::cout << "Mnemonic = MTC0 " << '\n'
-      << "rt = " << (unsigned)rt << ", rd = " << (unsigned)rd << '\n';
+    std::cout << std::hex
+              << "Input: MTC0 rt, rd" << '\n'
+              << "rt = " <<  (unsigned)rt
+              << ", gpr[rt] = " << (unsigned)Register(rt) << '\n'
+              << "rd = " << (unsigned)rd << ", gpr[rd] = " << (unsigned)Register(rd) << '\n'
+              << "Calculation: cop0.gpr[rd] = gpr[rt]" <<'\n'
+              << "Output: cop0.gpr[rd] = " << (unsigned)Register(rt) << '\n';
   }
   m_cop0.Register(rd) = Register(rt);
   PC() += 4;
+}
+
+void CPU::dumpState() const{
+
 }
 
 } // namespace processor

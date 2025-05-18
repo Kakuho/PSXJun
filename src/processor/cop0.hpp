@@ -10,10 +10,9 @@ namespace psxjun{
 namespace processor{
 
 class Cop0Registers{
-  private:
     std::array<std::uint32_t, 16> m_registers;
-
   public:
+    std::uint32_t& operator[](std::size_t index){ return m_registers[index]; }
 
     std::uint32_t& indx()     {return m_registers[0];}
     std::uint32_t& tlbl()     {return m_registers[1];}
@@ -75,7 +74,6 @@ enum class excode{
   unknown
 };
 
-
 class Cop0{
   Cop0Registers m_registers;
   public:
@@ -91,6 +89,10 @@ class Cop0{
     excode GetExcode() const;
     void SetInterrupt(std::uint8_t index);
     bool InterruptPending() const;
+
+    std::uint32_t& Register(std::size_t index){ return m_registers[index]; }
+
+
 };
 
 } // processor

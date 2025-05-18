@@ -1,12 +1,12 @@
-#include "./../system/psx.hpp"
-#include "./../memory/memory.hpp"
+#include "system/psx.hpp"
+#include "memory/memory.hpp"
 
 using namespace psxjun::system;
 using namespace psxjun::memory;
 
 int main(){
   Psx system{"./../rom/SCPH1001.BIN"};
-  system.run(100);
+  system.run(500);
   /*
   Bios b{"./../rom/SCPH1001.BIN"};
   Bios& bios = b;

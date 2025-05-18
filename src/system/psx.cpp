@@ -43,6 +43,7 @@ Psx::Psx(std::string&& biosFilePath):
 
 void Psx::run(){
   std::cout << "RUNNING!" << '\n';
+  while(true) m_cpu->Tick();
 }
 
 void Psx::run(std::size_t ticks){
