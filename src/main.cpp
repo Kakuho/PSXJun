@@ -1,15 +1,7 @@
-#include "system/psx.hpp"
-#include "memory/memory.hpp"
-
-using namespace psxjun::system;
-using namespace psxjun::memory;
+#include "system/psx_system.hpp"
 
 int main(){
-  Psx system{"./../rom/SCPH1001.BIN"};
-  system.run(500);
-  /*
-  Bios b{"./../rom/SCPH1001.BIN"};
-  Bios& bios = b;
-  std::cout << (unsigned)b[0] << '\n';
-  */
+  Jun::PsxSystem system{};
+  system.GetMemmap().LoadBios("./../rom/SCPH1001.BIN");
+  system.Run(500);
 }

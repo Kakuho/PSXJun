@@ -1,4 +1,4 @@
-#include "opcodetable.hpp"
+#include "opcode_table.hpp"
 #include <stdexcept>
 
 namespace Jun{

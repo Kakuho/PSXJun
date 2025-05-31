@@ -20,19 +20,6 @@ CPU::CPU(system::SystemBus* sysbus):
   m_pc = reset_vector;
 }
 
-// Registers
-
-std::uint32_t CPU::GetRegisterValue(std::uint8_t index) const{
-  if (index <= 32){
-    return m_registers[index];
-  }
-  else{
-    throw std::runtime_error{
-      "ERROR: GetRegisterValue(uint8_t index): " + std::to_string(index) + " is out of bounds"
-    };
-  }
-}
-
 // Memory getters
 
 std::uint8_t CPU::ReadByte(std::size_t index) const{

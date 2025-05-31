@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 include_directories(extern)
 
+add_executable(psxjun)
 include_directories(src)
 add_subdirectory(src)
 
@@ -20,3 +21,7 @@ if(TESTS)
   include_directories(tests)
   add_subdirectory(tests)
 endif(TESTS)
+
+add_custom_target(run psxjun
+  DEPENDS psxjun
+)

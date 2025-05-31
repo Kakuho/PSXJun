@@ -5,26 +5,26 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(SRCS 
       main.cpp
 
-      system/bus.cpp
-      system/bus.hpp
-      system/psx.cpp
-      system/psx.hpp
+      mips_r3000a/mips_manager.cpp
+      mips_r3000a/mips_state.cpp
+      mips_r3000a/opcode_table.cpp
 
-      memory/memory.cpp
-      memory/memory.hpp
-      memory/memory_mapping.hpp
+      mips_r3000a/interpreter/interpreter.cpp
+      mips_r3000a/interpreter/alu_impl.cpp
+      mips_r3000a/interpreter/load_store_impl.cpp
 
-      processor/cop0.cpp
-      processor/cop0.hpp
-      processor/cpu.cpp
-      processor/cpu.hpp
-      processor/instruction.hpp
+      mips_r3000a/cop0/cop0_state.cpp
+      mips_r3000a/cop0/misc_register.cpp
+      mips_r3000a/cop0/status_register.cpp
+      mips_r3000a/cop0/tbl_register_pair.cpp
 
-      util/util.hpp
-      util/util.cpp
+      system/memories.cpp
+      system/memory_manager.cpp
+      system/mmio.cpp
+      system/psx_system.cpp
+
+      common/register_base.cpp
 )
-
-add_executable(psxjun ${SRCS})
 
 option(DEBUG_BUILD "Compile With Debug Flags" OFF)
 if(DEBUG_BUILD)
@@ -32,6 +32,4 @@ if(DEBUG_BUILD)
   add_compile_options(-g -O0 -Wall -Wextra)
 endif(DEBUG_BUILD)
 
-add_custom_target(run psxjun
-  DEPENDS psxjun
-)
+target_sources(psxjun PRIVATE ${SRCS})
