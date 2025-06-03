@@ -1,19 +1,23 @@
 #pragma once
+#include <optional>
 
 #include "common/register_base.hpp"
 #include "status_register.hpp"
 #include "misc_register.hpp"
 #include "tbl_register_pair.hpp"
+#include "exception_register.hpp"
 
 namespace Jun{
 
-std::string Cop0RegisterName(std::uint8_t index);
+std::optional<std::string> Cop0RegisterName(std::uint8_t regIndex);
 
 class Cop0State{
   public:
     Cop0State() = default;
 
     std::size_t Size(){ return 16;}
+
+    std::optional<std::uint32_t> RegVal(std::uint8_t index) const;
 
     const IndexRegister& Index() const {return m_index;}
     IndexRegister& Index() { return m_index;}
@@ -56,10 +60,10 @@ class Cop0State{
     const StatusRegister& Status() const { return m_status;}
     StatusRegister& Status() { return m_status;}
 
-    /*
-    const std::uint32_t& Cause() const { return registers[13];}
-    std::uint32_t& Cause() { return registers[13];}
+    const ExceptionRegister& Cause() const { return m_cause;}
+    ExceptionRegister& Cause() { return m_cause;}
 
+    /*
     const std::uint32_t& ExPc() const { return registers[14];}
     std::uint32_t& ExPc() { return registers[14];}
 
@@ -71,6 +75,7 @@ class Cop0State{
     TblRegisterPair m_tblPair;
     IndexRegister m_index;
     StatusRegister m_status;
+    ExceptionRegister m_cause;
 };
 
 }

@@ -19,10 +19,12 @@ struct Gprs{
 
 class MipsState{
   public:
-    MipsState() = default;
+    MipsState();
 
     std::uint32_t Reg(std::uint8_t index) const noexcept { return m_gprs[index]; }
     std::uint32_t& Reg(std::uint8_t index) noexcept { return m_gprs[index]; }
+
+    std::size_t& Cycles() { return m_cycles;}
 
     std::uint32_t PC() const noexcept{ return m_pc;}
     std::uint32_t& PC() noexcept{ return m_pc;}
@@ -33,12 +35,16 @@ class MipsState{
     std::uint32_t Lo() const noexcept{ return m_low;}
     std::uint32_t& Lo() noexcept{ return m_low;}
 
+    const Cop0State& Cop0() const{ return m_cop0;}
+    Cop0State& Cop0() { return m_cop0;}
+
   private:
     Gprs m_gprs;
     Cop0State m_cop0;
     std::uint32_t m_high;
     std::uint32_t m_low;
     std::uint32_t m_pc;
+    std::size_t m_cycles;
 };
 
 }

@@ -8,6 +8,11 @@ PsxSystem::PsxSystem()
     m_memmap{*this}
 {
 }
+    
+void PsxSystem::Tick(){ 
+  m_cpu.Tick();
+  std::cout << "PSX Ticked :: New PC = " << GetCpu().State().PC() << '\n';
+}
 
 void PsxSystem::Run(){
   std::cout << "RUNNING!" << '\n';

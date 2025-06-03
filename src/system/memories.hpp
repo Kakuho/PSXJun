@@ -22,6 +22,7 @@ class Bios: public MemoryBase<BIOS_SIZE>{
   public:
     Bios() = default;
     void Load(std::string&& biosfile);
+    const std::string& BiosPath() const{ return m_biosFile;}
 
     std::uint8_t Get(std::size_t index) const{return m_data[index];}
 

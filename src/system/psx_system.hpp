@@ -2,6 +2,7 @@
 
 // Main container which contains all the other subsystems neccessary for PSX emulation
 
+#include <iostream>
 #include <memory>
 
 #include "memory_manager.hpp"
@@ -16,6 +17,8 @@ class PsxSystem{
     PsxSystem();
 
     void LoadBios(std::string&& biosFile){ m_memmap.LoadBios(std::move(biosFile));}
+
+    void Tick();
 
     void Run();
     void Run(std::size_t ticks);

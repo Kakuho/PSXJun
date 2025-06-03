@@ -1,10 +1,8 @@
-#pragma once
-
-//  Implementation of the arithmetic and logical opcodes of mips_r3000
+// Implementation of the arithmetic instructions of mips r3000
 
 #include <cstdint>
 
-#include "interpreter.hpp"
+#include "mips_r3000a/interpreter/interpreter.hpp"
 #include "common/integer_extension.hpp"
 #include "system/psx_system.hpp"
 
@@ -122,48 +120,6 @@ void Interpreter::Subu(Interpreter& interpreter, RegisterInstruction instruction
   std::uint32_t rtVal = interpreter.State().Reg(instruction.rt);
   interpreter.State().Reg(instruction.rd) = rsVal - rtVal;
 
-}
-
-// Logical
-
-void Interpreter::And(Interpreter& interpreter, RegisterInstruction instruction){
-  // Bitwise and of 2 registers
-  // Mnemonic: and rd, rs, rt
-  std::uint32_t rsVal = interpreter.State().Reg(instruction.rs);
-  std::uint32_t rtVal = interpreter.State().Reg(instruction.rt);
-  interpreter.State().Reg(instruction.rd) = rsVal & rtVal;
-}
-
-void Interpreter::Andi(Interpreter& interpreter, ImmediateInstruction instruction){
-  // Bitwise and of register and immediate
-  // Mnemonic: and rt, rs, immediate
-  std::uint32_t rsVal = interpreter.State().Reg(instruction.rs);
-  std::uint32_t immExtended= ZeroExtend32(instruction.immediate);
-  interpreter.State().Reg(instruction.rt) = rsVal & immExtended;
-}
-
-void Interpreter::Ori(Interpreter& interpreter, ImmediateInstruction instruction){
-  // Bitwise or of register and immediate
-  // Mnemonic: or rt, rs, immediate
-  std::uint32_t rsVal = interpreter.State().Reg(instruction.rs);
-  std::uint32_t immExtended= ZeroExtend32(instruction.immediate);
-  interpreter.State().Reg(instruction.rt) = rsVal | immExtended;
-}
-
-// Shifts
-
-void Interpreter::Sll(Interpreter& interpreter, RegisterInstruction instruction){
-  // Shift a register left
-  // Mnemonic: sll rt, rs, sa
-  std::uint32_t rsVal = interpreter.State().Reg(instruction.rs);
-  interpreter.State().Reg(instruction.rt) = rsVal << instruction.shamt;
-}
-
-void Interpreter::Lui(Interpreter& interpreter, ImmediateInstruction instruction){
-  // Load Upper Immediate
-  // Mnemonic: lui rt, imm
-  std::uint32_t immediate = instruction.immediate << 16;
-  interpreter.State().Reg(instruction.rt) = immediate;
 }
 
 }

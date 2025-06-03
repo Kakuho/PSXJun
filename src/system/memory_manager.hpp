@@ -6,8 +6,14 @@
 // In effect, it represents the memory mapping of the PSX system.
 
 #include <cstdint>
+#include <variant>
+#include <optional>
+#include <expected>
 
 #include "memories.hpp"
+#include "memory_map_addresses.hpp"
+#include "mmio.hpp"
+#include "memory_region.hpp"
 
 namespace Jun{
   class PsxSystem;
@@ -16,31 +22,27 @@ namespace Jun{
 namespace Jun{
 
 class MemoryManager{
-  // memory map constants
-  static inline constexpr std::uint32_t RAM_BEGIN  = 0x0000'0000;
-  static inline constexpr std::uint32_t RAM_END    = 0x001f'ffff;
-
-  static inline constexpr std::uint32_t SCRATCHPAD_BEGIN   = 0x1f80'0000;
-  static inline constexpr std::uint32_t SCRATCHPAD_END     = 0x1f80'03ff;
-
-  static inline constexpr std::uint32_t REGISTER_BEGIN = 0x1f80'1000;
-  static inline constexpr std::uint32_t REGISTER_END   = 0x1f80'2fff;
-
-  static inline constexpr std::uint32_t RAM_MIRROR1_BEGIN  = 0x8000'0000;
-  static inline constexpr std::uint32_t RAM_MIRROR1_END    = 0x801f'ffff;
-
-  static inline constexpr std::uint32_t RAM_MIRROR2_BEGIN  = 0xa000'0000;
-  static inline constexpr std::uint32_t RAM_MIRROR2_END    = 0xa01f'ffff;
-
-  static inline constexpr std::uint32_t BIOS_BEGIN  = 0xbfc0'0000;
-  static inline constexpr std::uint32_t BIOS_END    = 0xbfc7'ffff;
+  public:
+    enum class ExceptionCondition{
+      BusError,
+      AddressError
+    };
 
   public:
     MemoryManager(PsxSystem& system);
 
     void LoadBios(std::string&& file){ m_bios.Load(std::move(file));}
+    const std::string& BiosPath() const{ return m_bios.BiosPath();}
 
-    bool IsAddressError(std::uint32_t address);
+    bool CpuPrivilaged() const{ return true;}
+
+    std::optional<ExceptionCondition> BadAddress(std::uint32_t address) const;
+    std::optional<ExceptionCondition> BadAddress(std::uint32_t address, 
+                                                 std::uint8_t bytes
+                                                ) const;
+    std::optional<ExceptionCondition> BadByte(std::uint32_t address) const;
+    std::optional<ExceptionCondition> BadHalfWord(std::uint32_t address) const;
+    std::optional<ExceptionCondition> BadWord(std::uint32_t address) const;
 
     std::uint8_t ReadByte(std::uint32_t address) const;
     void WriteByte(std::uint32_t address, std::uint8_t val);
@@ -55,8 +57,30 @@ class MemoryManager{
     void WriteDoubleWord(std::uint32_t address, std::uint64_t val);
 
   private:
+    bool WithinKuseg(std::uint32_t address) const;
+    bool WithinKseg0(std::uint32_t address) const;
+    bool WithinKseg1(std::uint32_t address) const;
+    bool WithinKseg2(std::uint32_t address) const;
+
+    bool WithinKuseg(std::uint32_t address, std::uint8_t bytes) const;
+    bool WithinKseg0(std::uint32_t address, std::uint8_t bytes) const;
+    bool WithinKseg1(std::uint32_t address, std::uint8_t bytes) const;
+    bool WithinKseg2(std::uint32_t address, std::uint8_t bytes) const;
+
+    std::uint8_t ReadByteFromKuseg(std::uint32_t address) const;
+    std::uint8_t ReadByteFromKseg0(std::uint32_t address) const;
+    std::uint8_t ReadByteFromKseg1(std::uint32_t address) const;
+    std::uint8_t ReadByteFromKseg2(std::uint32_t address) const;
+
+    void WriteByteToKuseg(std::uint32_t address, std::uint8_t val);
+    void WriteByteToKseg0(std::uint32_t address, std::uint8_t val);
+    void WriteByteToKseg1(std::uint32_t address, std::uint8_t val);
+    void WriteByteToKseg2(std::uint32_t address, std::uint8_t val);
+
+  private:
     Bios m_bios;
     PhysicalRam m_ram;
+    MemoryMapIO m_mmio;
     PsxSystem& m_system;
 };
 

@@ -7,6 +7,8 @@
 //
 // *  MipsManager will also own the interpreter itself
 
+#include <variant>
+
 #include "interpreter/interpreter.hpp"
 
 #include "exception_vectors.hpp"
@@ -24,7 +26,11 @@ class MipsManager{
     MipsManager(PsxSystem& system);
     ~MipsManager() = default;
 
-    void Init();
+    static std::string JumpOpcodeMnemonic(std::uint8_t opcode);
+    static std::string ImmediateOpcodeMnemonic(std::uint8_t opcode);
+    static std::string RegisterOpcodeMnemonic(std::uint8_t funct);
+    static std::string BxxzOpcodeMnemonic(std::uint8_t rt);
+
     void Reset();
     void Shutdown();
 
@@ -36,6 +42,12 @@ class MipsManager{
 
     void HandleException();
     void HandleExternalException();
+
+    std::uint8_t NextOpcode(){ return m_interpreter.NextOpcode();}
+    std::uint32_t NextInstructionHex(){ return m_interpreter.NextInstructionHex();}
+
+    std::variant<RegisterInstruction, ImmediateInstruction, JumpInstruction>
+    CurrentInstruction() const{ return m_interpreter.CurrentInstruction();}
 
     MipsState& State(){ return m_state;}
     const MipsState& State() const{ return m_state;}
@@ -49,3 +61,4 @@ class MipsManager{
 };
 
 }
+

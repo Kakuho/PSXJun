@@ -1,19 +1,16 @@
-rom/*
-rom
-
-notes/*
-
 build/*
 
-src/test/*
-!src/test/*.cpp
+extern/*
 
-.cache/*
+rom/*
+rom
 
 */compile_commands.json
 compile_commands.json
 
+config.sh
+
 */*.swp
 *.swp
 
-config.sh
+.cache/*

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <variant>
 
 #include "mips_r3000a/mips_state.hpp"
 #include "mips_r3000a/instructions.hpp"
@@ -25,6 +26,11 @@ class Interpreter{
 
     void Reset();
     void Shutdown();
+
+    std::uint8_t NextOpcode() const;
+    std::uint32_t NextInstructionHex() const;
+
+    InstructionVariant CurrentInstruction() const;
 
     void Tick();
     void Run();
@@ -79,26 +85,40 @@ class Interpreter{
     // Instruction Types
 
     using RegisterFunction = void(*)(Interpreter&, RegisterInstruction);
+    using RegTableType = std::unordered_map<std::uint8_t, RegisterFunction>;
+
     using JumpFunction = void(*)(Interpreter&, JumpInstruction);
+    using JumpTableType = std::unordered_map<std::uint8_t, JumpFunction>;
+
     using ImmediateFunction = void(*)(Interpreter&, ImmediateInstruction);
+    using ImmTableType = std::unordered_map<std::uint8_t, ImmediateFunction>;
 
     // Instruction Tables
 
-    std::unordered_map<std::uint8_t, RegisterFunction>& RegisterFunctionTable()
-    { return m_registerTable;}
+    const RegTableType& RegisterFunctionTable() const { return m_registerTable;}
+    RegTableType& RegisterFunctionTable() { return m_registerTable;}
 
-    std::unordered_map<std::uint8_t, JumpFunction>& JumpFunctionTable()
-    { return m_jumpTable;}
+    const JumpTableType& JumpFunctionTable() const{ return m_jumpTable;}
+    JumpTableType& JumpFunctionTable() { return m_jumpTable;}
 
-    std::unordered_map<std::uint8_t, ImmediateFunction>& ImmediateFunctionTable()
-    { return m_immediateTable;}
+    const ImmTableType& ImmediateFunctionTable() const { return m_immediateTable;}
+    ImmTableType& ImmediateFunctionTable() { return m_immediateTable;}
 
-    // Load Stores
-
+    // Load 
     static void Lb(Interpreter& interpreter, ImmediateInstruction instruction);
+    static void Lbu(Interpreter& interpreter, ImmediateInstruction instruction);
+    static void Lh(Interpreter& interpreter, ImmediateInstruction instruction);
+    static void Lhu(Interpreter& interpreter, ImmediateInstruction instruction);
     static void Lw(Interpreter& interpreter, ImmediateInstruction instruction);
+    static void Lwl(Interpreter& interpreter, ImmediateInstruction instruction);
+    static void Lwr(Interpreter& interpreter, ImmediateInstruction instruction);
 
+    // Stores
+    static void Sb(Interpreter& interpreter, ImmediateInstruction instruction);
+    static void Sh(Interpreter& interpreter, ImmediateInstruction instruction);
     static void Sw(Interpreter& interpreter, ImmediateInstruction instruction);
+    //static void Swl(Interpreter& interpreter, ImmediateInstruction instruction);
+    //static void Swr(Interpreter& interpreter, ImmediateInstruction instruction);
 
     // ALU
 

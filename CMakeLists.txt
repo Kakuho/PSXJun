@@ -9,9 +9,13 @@ if(${CMAKE_VERSION} VERSION_LESS 3.12)
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(extern)
+include_directories(extern/imgui-1.91.8)
+include_directories(extern/imgui-1.91.8/backends)
 
+add_compile_options(-g)
 add_executable(psxjun)
 include_directories(src)
 add_subdirectory(src)

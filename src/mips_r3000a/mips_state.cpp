@@ -2,6 +2,17 @@
 
 namespace Jun{
 
+MipsState::MipsState()
+  : m_high{0},
+    m_low{0},
+    m_pc{0},
+    m_cycles{0}
+{
+  for(std::uint8_t i = 0; i < 32; i++){
+    m_gprs.regs[i] = 0;
+  }
+}
+
 std::string Gprs::Name(std::uint32_t index){
   switch(index){
     case 0:
